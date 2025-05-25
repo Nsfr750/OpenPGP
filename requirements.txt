@@ -1,0 +1,8 @@
+# Tkinter is built-in with Python (no need to install).
+# Pillow is required for PNG icon support: pip install pillow
+# ttkbootstrap is optional for future theming: pip install ttkbootstrap
+# No need to install tkinter separately unless on a minimal Python distribution.
+pillow
+ttkbootstrap
+pgpy
+cryptography

@@ -1,0 +1,24 @@
+digraph OpenPGPGUI {
+    rankdir=LR;
+    node [shape=box, style=rounded, fontname="Arial"];
+
+    MainPy [label="main.py\n(Entry Point)"];
+    GUI [label="gui/\nMainWindow, Widgets"];
+    Struttura [label="struttura/\nDialogs, Version, Menu"];
+    Docs [label="docs/\nDocumentation"];
+    Req [label="requirements.txt"];
+    PGPY [label="pgpy (OpenPGP)"];
+    Crypto [label="cryptography (SSL)"];
+    TTK [label="ttkbootstrap (UI)"];
+    Pillow [label="pillow (icons)"];
+
+    MainPy -> GUI;
+    MainPy -> Struttura;
+    MainPy -> Req;
+    GUI -> TTK;
+    GUI -> Pillow;
+    GUI -> Struttura;
+    Struttura -> PGPY;
+    Struttura -> Crypto;
+    Docs;
+}

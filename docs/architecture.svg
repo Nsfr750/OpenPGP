@@ -1,0 +1,41 @@
+<svg width="650" height="480" xmlns="http://www.w3.org/2000/svg">
+  <rect x="240" y="20" width="170" height="40" rx="10" fill="#e6e6e6" stroke="#333"/>
+  <text x="325" y="45" font-size="16" font-family="Arial" text-anchor="middle">main.py</text>
+  <text x="325" y="60" font-size="11" font-family="Arial" text-anchor="middle">(Entry Point)</text>
+
+  <rect x="240" y="80" width="170" height="60" rx="10" fill="#d0e6fa" stroke="#333"/>
+  <text x="325" y="110" font-size="15" font-family="Arial" text-anchor="middle">gui/</text>
+  <text x="325" y="125" font-size="11" font-family="Arial" text-anchor="middle">MainWindow, Widgets</text>
+
+  <rect x="240" y="160" width="170" height="60" rx="10" fill="#e6fad0" stroke="#333"/>
+  <text x="325" y="190" font-size="15" font-family="Arial" text-anchor="middle">struttura/</text>
+  <text x="325" y="205" font-size="11" font-family="Arial" text-anchor="middle">Help, About, Version, Menu</text>
+
+  <rect x="240" y="240" width="170" height="60" rx="10" fill="#f9e6fa" stroke="#333"/>
+  <text x="325" y="270" font-size="15" font-family="Arial" text-anchor="middle">Libs</text>
+  <text x="325" y="285" font-size="11" font-family="Arial" text-anchor="middle">pgpy, cryptography, ttkbootstrap, pillow</text>
+
+  <rect x="240" y="320" width="170" height="40" rx="10" fill="#f7f7d6" stroke="#333"/>
+  <text x="325" y="345" font-size="15" font-family="Arial" text-anchor="middle">docs/</text>
+  <text x="325" y="360" font-size="11" font-family="Arial" text-anchor="middle">Documentation</text>
+
+  <rect x="50" y="160" width="120" height="35" rx="7" fill="#fff" stroke="#999"/>
+  <text x="110" y="182" font-size="13" font-family="Arial" text-anchor="middle">requirements.txt</text>
+
+  <rect x="480" y="160" width="120" height="35" rx="7" fill="#fff" stroke="#999"/>
+  <text x="540" y="182" font-size="13" font-family="Arial" text-anchor="middle">README.md</text>
+
+  <!-- Arrows -->
+  <line x1="325" y1="60" x2="325" y2="80" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="325" y1="140" x2="325" y2="160" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="325" y1="220" x2="325" y2="240" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="325" y1="300" x2="325" y2="320" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="240" y1="190" x2="170" y2="190" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="410" y1="190" x2="480" y2="190" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+    </marker>
+  </defs>
+</svg>

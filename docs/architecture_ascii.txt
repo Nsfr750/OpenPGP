@@ -1,0 +1,34 @@
+OpenPGP GUI App Architecture (ASCII)
+
++-------------------+
+|    main.py        |
+| (Entry Point)     |
++---------+---------+
+          |
+          v
++---------+---------+
+|      gui/         |
+| MainWindow,       |
+| Widgets           |
++---------+---------+
+          |
+          v
++---------+---------+
+|   struttura/      |
+| Help, About,      |
+| Version, Menu     |
++---------+---------+
+          |
+          v
++---------+---------+
+|  pgpy, cryptography, |
+|  ttkbootstrap, pillow|
++----------------------+
+          |
+          v
++---------+---------+
+|   docs/           |
+| Documentation     |
++-------------------+
+
+requirements.txt e altri file di supporto ai lati.
