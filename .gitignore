@@ -23,6 +23,12 @@ var/
 .installed.cfg
 *.egg
 MANIFEST
+*.pem
+*.asc
+*.gpg
+*.key
+*.p12
+*.pfx
 
 # Installer logs
 pip-log.txt
