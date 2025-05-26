@@ -13,6 +13,7 @@ from tkinter import filedialog, messagebox
 class MainWindow(ttkb.Window):
     def __init__(self):
         super().__init__()
+        self.title("OpenPGP")
         # Menu bar
         create_menu_bar(self, self)
         # Variables
