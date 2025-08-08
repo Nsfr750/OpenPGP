@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.0.0] - 2025-08-08
+### Major Changes
+- **Complete UI Migration to PySide6**
+  - Modern, responsive interface with dark theme
+  - Improved window management and dialog handling
+  - Better cross-platform compatibility
+- **New Password Management Features**
+  - Secure password generation with customizable options
+  - PBKDF2-SHA256 password hashing
+  - Password strength validation
+  - Clipboard integration with error handling
+- **Enhanced PGP Tools**
+  - Streamlined key generation and management
+  - Improved message encryption/decryption workflow
+  - Better error handling and user feedback
+- **Code Quality & Maintenance**
+  - Updated dependencies to latest stable versions
+  - Improved code organization and documentation
+  - Better error handling and logging
+
 ## [1.2.0] - 2025-05-25
 - Centralized logging system: info, warning, error, uncaught exceptions
 - Added log_info, log_warning, log_error for custom log entries

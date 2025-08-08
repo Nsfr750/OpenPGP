@@ -1,19 +1,20 @@
 # Getting Started
 
 ## Requirements
-- Python 3.x
-- Tkinter (included with Python)
-- Pillow (`pip install pillow`)
-- ttkbootstrap (`pip install ttkbootstrap`)
-- pgpy (`pip install pgpy`)
-- cryptography (`pip install cryptography`)
+- Python 3.9 or higher
+- PySide6 (included in requirements)
+- pgpy (included in requirements)
+- cryptography (included in requirements)
+- pyperclip (included in requirements)
+
+> **Note**: The application has been migrated from Tkinter/ttkbootstrap to PySide6 for a more modern and maintainable UI.
 
 ## Installation
 1. Clone or download this repository.
 2. (Optional) Create a virtual environment:
    ```
-   python -m venv .venv
-   .venv\Scripts\activate
+   python -m venv venv
+   venv\Scripts\activate
    ```
 3. Install dependencies:
    ```

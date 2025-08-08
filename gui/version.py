@@ -1,7 +1,7 @@
 # Version information follows Semantic Versioning 2.0.0 (https://semver.org/)
 # Update version numbers as needed for releases
-VERSION_MAJOR = 1
-VERSION_MINOR = 2
+VERSION_MAJOR = 2
+VERSION_MINOR = 0
 VERSION_PATCH = 0
 
 # Additional version qualifiers

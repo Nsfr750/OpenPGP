@@ -1,8 +1,20 @@
-# Tkinter is built-in with Python (no need to install).
-# Pillow is required for PNG icon support: pip install pillow
-# ttkbootstrap is optional for future theming: pip install ttkbootstrap
-# No need to install tkinter separately unless on a minimal Python distribution.
-pillow
-ttkbootstrap
-pgpy
-cryptography
+# Core dependencies
+PySide6>=6.9.1
+PySide6-Addons>=6.9.1
+PySide6-Essentials>=6.9.1
+shiboken6>=6.9.1
+pgpy>=0.5.3
+cryptography>=42.0.0
+pyperclip>=1.9.0
+
+# Development dependencies
+black>=24.3.0
+pytest>=8.1.0
+pytest-qt>=4.2.0
+
+# For image processing
+wand>=0.6.11
+
+# For testing
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0

@@ -1,6 +1,26 @@
 import os
+import sys
 from typing import Optional
-from pgpy import PGPKey, PGPMessage, PGPUID, PGPSignature
+
+# Try to import pgpy, but handle the imghdr import issue
+try:
+    from pgpy import PGPKey, PGPMessage, PGPUID, PGPSignature
+except ModuleNotFoundError as e:
+    if 'imghdr' in str(e):
+        # Create a minimal imghdr module
+        class ImghdrModule:
+            @staticmethod
+            def what(file, h=None):
+                return None
+        
+        # Add the minimal imghdr module to sys.modules
+        sys.modules['imghdr'] = ImghdrModule()
+        
+        # Try the import again
+        from pgpy import PGPKey, PGPMessage, PGPUID, PGPSignature
+    else:
+        # Re-raise if it's a different import error
+        raise
 from pgpy.constants import PubKeyAlgorithm, KeyFlags, HashAlgorithm, SymmetricKeyAlgorithm, CompressionAlgorithm
 from cryptography import x509
 from cryptography.x509.oid import NameOID
