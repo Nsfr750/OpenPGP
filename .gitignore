@@ -86,3 +86,5 @@ Traceback.log
 # Other
 *.bak
 *.tmp
+build_simple.bat
+openpgp.spec
