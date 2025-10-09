@@ -113,7 +113,6 @@ Contributions are welcome! Please follow these steps:
 ## Support
 For support, please:
 - Open an issue on GitHub
-- Join our [Discord](https://discord.gg/ryqNeuRYjD)
 - Check out the [documentation](docs/)
 
 ## License

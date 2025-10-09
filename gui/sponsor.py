@@ -51,9 +51,7 @@ class SponsorWindow(QDialog):
         # Define buttons with their respective URLs and styles
         buttons = [
             ("🐙 Sponsor on GitHub", "https://github.com/sponsors/Nsfr750", "#2ecc71"),
-            ("💬 Join Discord", "https://discord.gg/ryqNeuRYjD", "#3498db"),
-            ("💰 Donate on Paypal", "https://paypal.me/3dmega", "#f39c12"),
-            ("💬 Join The Patreon", "https://www.patreon.com/Nsfr750", "#9b59b6")
+            ("💰 Donate on Paypal", "https://paypal.me/3dmega", "#f39c12")
         ]
         
         for text, url, color in buttons:
