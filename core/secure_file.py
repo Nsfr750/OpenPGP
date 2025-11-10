@@ -21,6 +21,191 @@ class SecureFileError(Exception):
     """Base exception for secure file operations."""
     pass
 
+
+class SecureFile:
+    """Class for secure file operations including encryption, decryption, and secure deletion."""
+    
+    def __init__(self, key: Optional[bytes] = None, gpg_home: Optional[str] = None):
+        """
+        Initialize the SecureFile instance.
+        
+        Args:
+            key: Encryption key (if None, a random key will be generated)
+            gpg_home: Path to the GnuPG home directory (default: ~/.gnupg)
+        """
+        self.key = key or secrets.token_bytes(32)  # 256-bit key by default
+        self.gpg_home = str(gpg_home or Path.home() / '.gnupg')
+        self.efs = EncryptedFileSystem(self.key)
+        self.shredder = SecureFileShredder()
+    
+    def encrypt_file(self, input_path: Union[str, Path], 
+                    output_path: Optional[Union[str, Path]] = None,
+                    shred_original: bool = False) -> Path:
+        """
+        Encrypt a file using AES-256-GCM.
+        
+        Args:
+            input_path: Path to the input file
+            output_path: Path to the output file (default: input_path + '.enc')
+            shred_original: Whether to securely delete the original file
+            
+        Returns:
+            Path to the encrypted file
+        """
+        input_path = Path(input_path)
+        if not input_path.exists():
+            raise SecureFileError(f"Input file not found: {input_path}")
+            
+        if output_path is None:
+            output_path = input_path.with_suffix(input_path.suffix + '.enc')
+        else:
+            output_path = Path(output_path)
+        
+        try:
+            # Encrypt the file
+            self.efs.encrypt_file(input_path, output_path)
+            
+            # Securely delete the original if requested
+            if shred_original:
+                self.shredder.shred(input_path)
+                
+            logger.info(f"Encrypted file saved to {output_path}")
+            return output_path
+            
+        except Exception as e:
+            # Clean up partial output file if it exists
+            if output_path.exists():
+                try:
+                    output_path.unlink()
+                except OSError:
+                    pass
+            raise SecureFileError(f"Error encrypting file: {e}")
+    
+    def decrypt_file(self, input_path: Union[str, Path],
+                    output_path: Optional[Union[str, Path]] = None) -> Path:
+        """
+        Decrypt a file encrypted with encrypt_file().
+        
+        Args:
+            input_path: Path to the encrypted file
+            output_path: Path to the output file (default: input_path without .enc)
+            
+        Returns:
+            Path to the decrypted file
+        """
+        input_path = Path(input_path)
+        if not input_path.exists():
+            raise SecureFileError(f"Input file not found: {input_path}")
+            
+        if output_path is None:
+            if input_path.suffix == '.enc':
+                output_path = input_path.with_suffix('')
+            else:
+                output_path = input_path.with_suffix(input_path.suffix + '.dec')
+        else:
+            output_path = Path(output_path)
+        
+        try:
+            # Decrypt the file
+            self.efs.decrypt_file(input_path, output_path)
+            logger.info(f"Decrypted file saved to {output_path}")
+            return output_path
+            
+        except Exception as e:
+            # Clean up partial output file if it exists
+            if output_path.exists():
+                try:
+                    output_path.unlink()
+                except OSError:
+                    pass
+            raise SecureFileError(f"Error decrypting file: {e}")
+    
+    def secure_delete(self, path: Union[str, Path], 
+                     method: str = 'shred',
+                     passes: int = 3) -> None:
+        """
+        Securely delete a file or directory.
+        
+        Args:
+            path: Path to the file or directory to delete
+            method: Method to use ('shred' or 'wipe')
+            passes: Number of overwrite passes (for 'shred' method)
+            
+        Raises:
+            SecureFileError: If the operation fails
+        """
+        path = Path(path)
+        if not path.exists():
+            raise SecureFileError(f"Path not found: {path}")
+            
+        try:
+            if path.is_file():
+                self.shredder.shred(path)
+            elif path.is_dir():
+                self.shredder.shred_directory(path)
+            else:
+                raise SecureFileError(f"Unsupported file type: {path}")
+                
+            logger.info(f"Securely deleted {path}")
+            
+        except Exception as e:
+            raise SecureFileError(f"Error during secure deletion: {e}")
+    
+    def get_file_metadata(self, path: Union[str, Path]) -> Dict[str, Any]:
+        """
+        Get metadata about a file.
+        
+        Args:
+            path: Path to the file
+            
+        Returns:
+            Dictionary containing file metadata
+            
+        Raises:
+            SecureFileError: If the file cannot be accessed
+        """
+        try:
+            return get_file_metadata(path)
+        except Exception as e:
+            raise SecureFileError(f"Error getting file metadata: {e}")
+    
+    def calculate_checksum(self, path: Union[str, Path], 
+                          algorithm: str = 'sha256') -> str:
+        """
+        Calculate the checksum of a file.
+        
+        Args:
+            path: Path to the file
+            algorithm: Hash algorithm to use (e.g., 'sha256', 'sha512')
+            
+        Returns:
+            Hex-encoded checksum string
+            
+        Raises:
+            SecureFileError: If the file cannot be read or the algorithm is unsupported
+        """
+        path = Path(path)
+        if not path.exists():
+            raise SecureFileError(f"File not found: {path}")
+            
+        try:
+            # Get the hash function
+            hash_func = getattr(hashes, algorithm.upper(), None)
+            if hash_func is None:
+                raise ValueError(f"Unsupported hash algorithm: {algorithm}")
+                
+            digest = hashes.Hash(hash_func(), backend=default_backend())
+            
+            # Read the file in chunks to handle large files
+            with open(path, 'rb') as f:
+                while chunk := f.read(8192):
+                    digest.update(chunk)
+                    
+            return digest.finalize().hex()
+            
+        except Exception as e:
+            raise SecureFileError(f"Error calculating checksum: {e}")
+
 class EncryptedFileSystem:
     """Class for handling encrypted file system operations."""
     

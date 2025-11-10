@@ -9,6 +9,7 @@ if 'imghdr' not in sys.modules:
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from gui.main_window import MainWindow
 from utils.logger import log_error, log_info, log_warning, log_exception, set_log_file
 
@@ -32,6 +33,10 @@ sys.excepthook = global_exception_hook
 def main():
     # Create the Qt Application
     app = QApplication(sys.argv)
+    
+    # Set application icon
+    app_icon = QIcon("assets/icon.png")
+    app.setWindowIcon(app_icon)
     
     # Apply Fusion style for a modern look
     app.setStyle('Fusion')

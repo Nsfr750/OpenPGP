@@ -24,6 +24,178 @@ class HSMError(Exception):
     """Base exception for HSM related errors."""
     pass
 
+
+class HSM:
+    """Class for managing Hardware Security Module (HSM) operations."""
+    
+    def __init__(self, hsm_id: str = 'default', gpg_home: Optional[str] = None):
+        """
+        Initialize the HSM instance.
+        
+        Args:
+            hsm_id: Unique identifier for the HSM
+            gpg_home: Path to the GnuPG home directory (default: ~/.gnupg)
+        """
+        self.hsm_id = hsm_id
+        self.gpg_home = str(gpg_home or Path.home() / '.gnupg')
+        self.gpg = gnupg.GPG(gnupghome=self.gpg_home, use_agent=True)
+        self.manager = HSMManager()
+    
+    def is_available(self) -> bool:
+        """
+        Check if the HSM is available and accessible.
+        
+        Returns:
+            bool: True if the HSM is available, False otherwise
+        """
+        try:
+            # Try to list keys to check HSM connectivity
+            self.gpg.list_cards()
+            return True
+        except Exception:
+            return False
+    
+    def generate_key(self, key_type: str = 'RSA', key_length: int = 2048, 
+                    name_real: str = '', name_email: str = '') -> Dict[str, Any]:
+        """
+        Generate a new key on the HSM.
+        
+        Args:
+            key_type: Type of key to generate (RSA, ECC, etc.)
+            key_length: Length of the key in bits
+            name_real: Real name for the key
+            name_email: Email for the key
+            
+        Returns:
+            Dictionary with information about the generated key
+        """
+        try:
+            # Prepare key parameters
+            key_usage = ['sign', 'encrypt', 'auth']
+            
+            # Generate key on HSM
+            key_info = generate_key_on_hsm(
+                hsm_id=self.hsm_id,
+                key_type=key_type.upper(),
+                key_size=key_length,
+                key_usage=key_usage
+            )
+            
+            # Import the public key into GnuPG
+            public_key = key_info.get('public_key')
+            if public_key:
+                import_result = self.gpg.import_keys(public_key)
+                key_info['fingerprint'] = import_result.fingerprints[0] if import_result.fingerprints else None
+            
+            logger.info(f"Generated new key on HSM: {key_info.get('key_id')}")
+            return key_info
+            
+        except Exception as e:
+            raise HSMError(f"Error generating key on HSM: {e}")
+    
+    def sign_data(self, key_id: str, data: bytes, 
+                 hash_algorithm: str = 'sha256') -> bytes:
+        """
+        Sign data using a key on the HSM.
+        
+        Args:
+            key_id: ID of the key to use for signing
+            data: Data to sign
+            hash_algorithm: Hash algorithm to use
+            
+        Returns:
+            The signature as bytes
+        """
+        try:
+            # Get key information
+            keys = self.gpg.list_keys(secret=True)
+            key_info = next((k for k in keys if key_id in k['fingerprint']), None)
+            
+            if not key_info:
+                raise HSMError(f"Key {key_id} not found in keyring")
+                
+            # Sign the data using the HSM
+            signature = sign_with_hsm(
+                hsm_id=self.hsm_id,
+                key_info=key_info,
+                data=data,
+                hash_algorithm=hash_algorithm
+            )
+            
+            return signature
+            
+        except Exception as e:
+            raise HSMError(f"Error signing data with HSM: {e}")
+    
+    def list_keys(self) -> List[Dict[str, Any]]:
+        """
+        List all keys available on the HSM.
+        
+        Returns:
+            List of dictionaries containing key information
+        """
+        try:
+            # Get keys from GnuPG that are stored on the HSM
+            keys = []
+            for key in self.gpg.list_keys(secret=True):
+                if key.get('card_no'):  # Keys with card_no are on the HSM
+                    keys.append({
+                        'fingerprint': key['fingerprint'],
+                        'key_id': key['keyid'],
+                        'type': key['type'],
+                        'length': key['length'],
+                        'created': key['date'],
+                        'expires': key['expires'],
+                        'card_no': key.get('card_no')
+                    })
+            return keys
+            
+        except Exception as e:
+            raise HSMError(f"Error listing HSM keys: {e}")
+    
+    def get_public_key(self, key_id: str) -> str:
+        """
+        Get the public key from the HSM.
+        
+        Args:
+            key_id: ID of the key to export
+            
+        Returns:
+            The public key in ASCII-armored format
+        """
+        try:
+            # Export the public key from GnuPG
+            public_key = self.gpg.export_keys(key_id)
+            if not public_key:
+                raise HSMError(f"Failed to export public key {key_id}")
+                
+            return public_key
+            
+        except Exception as e:
+            raise HSMError(f"Error getting public key from HSM: {e}")
+    
+    def delete_key(self, key_id: str) -> bool:
+        """
+        Delete a key from the HSM.
+        
+        Args:
+            key_id: ID of the key to delete
+            
+        Returns:
+            bool: True if the key was deleted successfully
+        """
+        try:
+            # Delete the key from GnuPG
+            result = self.gpg.delete_keys(key_id, secret=True, passphrase='')
+            if not result:
+                raise HSMError(f"Failed to delete key {key_id}")
+                
+            logger.info(f"Deleted key from HSM: {key_id}")
+            return True
+            
+        except Exception as e:
+            raise HSMError(f"Error deleting key from HSM: {e}")
+
 class HSMManager:
     """Manager for Hardware Security Module (HSM) operations."""
     

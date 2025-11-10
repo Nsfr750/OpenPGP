@@ -18,6 +18,161 @@ class SmartCardError(Exception):
     """Base exception for smart card related errors."""
     pass
 
+
+class SmartCard:
+    """Class for managing OpenPGP smart card operations."""
+    
+    def __init__(self, gpg_home: Optional[str] = None):
+        """
+        Initialize the SmartCard instance.
+        
+        Args:
+            gpg_home: Path to the GnuPG home directory (default: ~/.gnupg)
+        """
+        self.gpg_home = str(gpg_home or Path.home() / '.gnupg')
+        self.gpg = gnupg.GPG(gnupghome=self.gpg_home, use_agent=True)
+        self.card = OpenPGPCard(self.gpg_home)
+        
+    def get_card_info(self) -> Dict[str, Any]:
+        """
+        Get information about the inserted smart card.
+        
+        Returns:
+            Dictionary containing card information
+        """
+        try:
+            return self.card.card_status
+        except Exception as e:
+            raise SmartCardError(f"Failed to get card info: {e}")
+    
+    def generate_key_on_card(self, key_type: str = 'RSA', key_length: int = 2048, 
+                           name_real: str = '', name_email: str = '') -> bool:
+        """
+        Generate a new key directly on the smart card.
+        
+        Args:
+            key_type: Type of key to generate (RSA, ECC, etc.)
+            key_length: Length of the key in bits
+            name_real: Real name for the key
+            name_email: Email for the key
+            
+        Returns:
+            bool: True if key generation was successful
+        """
+        try:
+            # Check if card is present and writable
+            if not self.card_status.get('card_available', False):
+                raise SmartCardError("No smart card found")
+                
+            if not self.card_status.get('card_writable', False):
+                raise SmartCardError("Smart card is not writable")
+                
+            # Generate key on card
+            input_data = self.gpg.gen_key_input(
+                key_type=key_type,
+                key_length=key_length,
+                name_real=name_real,
+                name_email=name_email,
+                key_usage='sign,encrypt,auth',
+                subkey_type=key_type,
+                subkey_length=key_length,
+                subkey_usage='sign,encrypt',
+                expire_date='2y',
+                passphrase='',  # No passphrase for card-stored keys
+                no_protection=True,
+                key_curve='ed25519' if key_type.upper() == 'ECC' else None
+            )
+            
+            result = self.gpg.gen_key(input_data)
+            if not result.fingerprint:
+                raise SmartCardError(f"Failed to generate key: {result.stderr}")
+                
+            logger.info(f"Generated new key on smart card: {result.fingerprint}")
+            return True
+            
+        except Exception as e:
+            raise SmartCardError(f"Error generating key on card: {e}")
+    
+    def import_public_key(self, key_data: str) -> bool:
+        """
+        Import a public key to the smart card.
+        
+        Args:
+            key_data: Public key data as a string
+            
+        Returns:
+            bool: True if import was successful
+        """
+        try:
+            import_result = self.gpg.import_keys(key_data)
+            if not import_result.fingerprints:
+                raise SmartCardError("Failed to import public key")
+                
+            logger.info(f"Imported public key: {import_result.fingerprints[0]}")
+            return True
+            
+        except Exception as e:
+            raise SmartCardError(f"Error importing public key: {e}")
+    
+    def change_pin(self, pin_type: str = 'user') -> bool:
+        """
+        Change the PIN for the smart card.
+        
+        Args:
+            pin_type: Type of PIN to change ('user', 'admin', or 'reset')
+            
+        Returns:
+            bool: True if PIN was changed successfully
+        """
+        try:
+            if pin_type not in ['user', 'admin', 'reset']:
+                raise ValueError("Invalid PIN type. Must be 'user', 'admin', or 'reset'")
+                
+            # This will prompt the user for the current and new PINs
+            result = self.gpg.card_edit(
+                commands=[f'admin\npasswd\n{self._get_pin_type_code(pin_type)}\nquit\n']
+            )
+            
+            if 'command failed' in str(result).lower():
+                raise SmartCardError("Failed to change PIN")
+                
+            logger.info(f"Successfully changed {pin_type} PIN")
+            return True
+            
+        except Exception as e:
+            raise SmartCardError(f"Error changing {pin_type} PIN: {e}")
+    
+    def _get_pin_type_code(self, pin_type: str) -> str:
+        """Get the code for the specified PIN type."""
+        pin_types = {
+            'user': '1',
+            'admin': '3',
+            'reset': '4'
+        }
+        return pin_types.get(pin_type.lower(), '1')
+    
+    def list_keys(self) -> List[Dict[str, Any]]:
+        """
+        List all keys on the smart card.
+        
+        Returns:
+            List of dictionaries containing key information
+        """
+        try:
+            keys = []
+            public_keys = self.gpg.list_keys()
+            secret_keys = self.gpg.list_secret_keys()
+            
+            for key in public_keys:
+                if key.get('keyid') in [k.get('keyid') for k in secret_keys]:
+                    key['on_card'] = True
+                    keys.append(key)
+                    
+            return keys
+            
+        except Exception as e:
+            raise SmartCardError(f"Error listing keys: {e}")
+
 class OpenPGPCard:
     """Class representing an OpenPGP smart card."""
     

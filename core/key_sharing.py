@@ -25,6 +25,176 @@ class KeySharingError(Exception):
     """Base exception for key sharing related errors."""
     pass
 
+
+class KeySharing:
+    """Class for managing secure key sharing operations."""
+    
+    def __init__(self, gpg_home: Optional[str] = None):
+        """
+        Initialize the KeySharing instance.
+        
+        Args:
+            gpg_home: Path to the GnuPG home directory (default: ~/.gnupg)
+        """
+        self.gpg_home = str(gpg_home or Path.home() / '.gnupg')
+        self.gpg = gnupg.GPG(gnupghome=self.gpg_home, use_agent=True)
+        self.manager = KeySharingManager(gpg_home=gpg_home)
+    
+    def generate_keypair(self) -> Tuple[bytes, bytes]:
+        """
+        Generate a new key pair for secure key sharing.
+        
+        Returns:
+            Tuple of (private_key, public_key) in bytes
+        """
+        return self.manager.generate_keypair()
+    
+    def prepare_key_for_sharing(self, key_fingerprint: str, 
+                              recipient_fingerprints: List[str],
+                              min_shares: int = 2) -> Dict[str, Any]:
+        """
+        Prepare a key for secure sharing with multiple recipients.
+        
+        Args:
+            key_fingerprint: Fingerprint of the key to share
+            recipient_fingerprints: List of recipient key fingerprints
+            min_shares: Minimum number of shares required to reconstruct the key
+            
+        Returns:
+            Dictionary containing the encrypted key shares and metadata
+        """
+        try:
+            # Export the private key
+            private_key = self.gpg.export_keys(key_fingerprint, secret=True, 
+                                             passphrase='')
+            if not private_key:
+                raise KeySharingError(f"Failed to export key {key_fingerprint}")
+            
+            # Get recipient public keys
+            recipient_public_keys = []
+            for fp in recipient_fingerprints:
+                pubkey = self.gpg.export_keys(fp)
+                if not pubkey:
+                    raise KeySharingError(f"Failed to export public key {fp}")
+                recipient_public_keys.append(pubkey.encode('utf-8'))
+            
+            # Encrypt and split the key
+            shares = self.manager.encrypt_key_share(
+                key_data=private_key.encode('utf-8'),
+                recipient_public_keys=recipient_public_keys,
+                min_shares=min_shares
+            )
+            
+            # Prepare the result
+            result = {
+                'key_fingerprint': key_fingerprint,
+                'recipients': recipient_fingerprints,
+                'min_shares': min_shares,
+                'shares': [s.to_dict() for s in shares],
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            return result
+            
+        except Exception as e:
+            raise KeySharingError(f"Error preparing key for sharing: {e}")
+    
+    def reconstruct_key(self, share_data: Dict[str, Any]) -> bool:
+        """
+        Reconstruct a shared key and import it into the keyring.
+        
+        Args:
+            share_data: Dictionary containing key share data
+            
+        Returns:
+            bool: True if the key was successfully imported
+        """
+        try:
+            # Convert share data to KeyShare objects
+            shares = [
+                KeyShare.from_dict(share) 
+                for share in share_data.get('shares', [])
+            ]
+            
+            # Get the encrypted package (stored in the first share)
+            if not shares:
+                raise KeySharingError("No key shares provided")
+                
+            encrypted_package = shares[0].encrypted_package
+            
+            # Reconstruct the key
+            key_data = self.manager.decrypt_key_share(
+                key_shares=shares,
+                encrypted_package=encrypted_package,
+                private_key=None  # Will use the default private key
+            )
+            
+            if not key_data:
+                raise KeySharingError("Failed to reconstruct key from shares")
+            
+            # Import the key
+            import_result = self.gpg.import_keys(key_data.decode('utf-8'))
+            if not import_result.count:
+                raise KeySharingError("Failed to import reconstructed key")
+            
+            logger.info(f"Successfully imported key {import_result.fingerprints[0]}")
+            return True
+            
+        except Exception as e:
+            raise KeySharingError(f"Error reconstructing key: {e}")
+    
+    def export_share(self, share_data: Dict[str, Any], 
+                    output_file: Optional[str] = None) -> str:
+        """
+        Export key share data to a file.
+        
+        Args:
+            share_data: Dictionary containing key share data
+            output_file: Path to the output file (default: auto-generated)
+            
+        Returns:
+            Path to the exported file
+        """
+        try:
+            if not output_file:
+                timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                output_file = f"key_share_{timestamp}.json"
+            
+            with open(output_file, 'w') as f:
+                json.dump(share_data, f, indent=2)
+            
+            logger.info(f"Exported key share to {output_file}")
+            return output_file
+            
+        except Exception as e:
+            raise KeySharingError(f"Error exporting key share: {e}")
+    
+    def import_share(self, input_file: str) -> Dict[str, Any]:
+        """
+        Import key share data from a file.
+        
+        Args:
+            input_file: Path to the input file
+            
+        Returns:
+            Dictionary containing the imported key share data
+        """
+        try:
+            with open(input_file, 'r') as f:
+                share_data = json.load(f)
+            
+            # Validate the share data
+            required_fields = ['key_fingerprint', 'recipients', 'min_shares', 'shares']
+            for field in required_fields:
+                if field not in share_data:
+                    raise KeySharingError(f"Missing required field: {field}")
+            
+            logger.info(f"Imported key share for key {share_data['key_fingerprint']}")
+            return share_data
+            
+        except Exception as e:
+            raise KeySharingError(f"Error importing key share: {e}")
+
 class KeyShare:
     """Class representing a share of a key."""
     

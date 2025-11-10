@@ -18,7 +18,13 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
-from argon2.low_level import hash_secret_raw, Type as Argon2Type
+# Argon2 import (using argon2-cffi)
+try:
+    from argon2 import PasswordHasher, Type as Argon2Type
+except ImportError:
+    # Fallback if argon2-cffi is not available
+    PasswordHasher = None
+    Argon2Type = None
 import pyotp
 import qrcode
 import pyqrcode

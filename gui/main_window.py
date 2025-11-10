@@ -15,6 +15,10 @@ from PySide6.QtGui import (
 
 from .menu import MenuBar
 from .key_backup_dialog import KeyBackupDialog
+from .identity_tab import IdentityTab
+from .key_management import KeyManagementTab
+from .security import SecurityTab
+from .dialogs.tpm_settings_dialog import TpmSettingsDialog
 
 from utils.password_utils import PasswordGenerator, generate_pbkdf2_hash, verify_password
 from core.openpgp import (
@@ -59,9 +63,16 @@ class MainWindow(QMainWindow):
         # Create and add tabs
         self.password_tab = self.create_password_tab()
         self.pgp_tab = self.create_pgp_tab()
+        self.identity_tab = IdentityTab()
+        self.key_management_tab = KeyManagementTab()
+        self.security_tab = SecurityTab()
         
         self.tabs.addTab(self.password_tab, "Password Tools")
         self.tabs.addTab(self.pgp_tab, "PGP Tools")
+        self.tabs.addTab(self.identity_tab, "Identity")
+        self.tabs.addTab(self.key_management_tab, "Key Management")
+        self.tabs.addTab(self.security_tab, "Security")
+        self.tabs.addTab(self.create_tpm_tab(), "TPM Settings")
         
         # Connect tab changed signal
         self.tabs.currentChanged.connect(self.on_tab_changed)
@@ -832,6 +843,11 @@ class MainWindow(QMainWindow):
                 border-radius: 3px;
                 padding: 0px;
                 background: #2A2D32;
+                margin-top: 2px;
+            }
+            QTabBar {
+                background: #31363B;
+                border: none;
             }
             QTabBar::tab {
                 background: #31363B;
@@ -845,6 +861,7 @@ class MainWindow(QMainWindow):
             QTabBar::tab:selected, QTabBar::tab:hover {
                 background: #3DAEE9;
                 color: #FCFCFC;
+                border-bottom: 2px solid #3DAEE9;
             }
             QTabBar::tab:!selected {
                 margin-top: 2px;

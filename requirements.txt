@@ -3,6 +3,10 @@ PySide6>=6.9.1
 PySide6-Addons>=6.9.1
 PySide6-Essentials>=6.9.1
 shiboken6>=6.9.1
+dnspython>=2.5.0 
+msgpack>=1.0.5
+# Make tpm2-pytss optional
+tpm2-pytss>=2.3.0; platform_system != 'Windows'  # Optional TPM support
 
 # Cryptography
 pgpy>=0.5.3

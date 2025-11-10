@@ -17,6 +17,136 @@ class KeyRingError(Exception):
     """Base exception for key ring related errors."""
     pass
 
+
+class KeyringManager:
+    """Manager for multiple key rings."""
+    
+    def __init__(self, base_dir: Optional[Path] = None):
+        """
+        Initialize the key ring manager.
+        
+        Args:
+            base_dir: Base directory for key rings (default: ~/.openpgp/keyrings)
+        """
+        self.base_dir = base_dir or Path.home() / '.openpgp' / 'keyrings'
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.current_keyring: Optional[KeyRing] = None
+        self.keyrings: Dict[str, KeyRing] = {}
+        self._load_keyrings()
+    
+    def _load_keyrings(self):
+        """Load all key rings from disk."""
+        for entry in self.base_dir.iterdir():
+            if entry.is_dir() and (entry / 'pubring.kbx').exists():
+                try:
+                    self._load_keyring(entry.name)
+                except Exception as e:
+                    logger.error(f"Failed to load keyring {entry.name}: {e}")
+    
+    def _load_keyring(self, name: str):
+        """Load a single key ring."""
+        keyring_dir = self.base_dir / name
+        gpg = gnupg.GPG(gnupghome=str(keyring_dir))
+        self.keyrings[name] = KeyRing(name, keyring_dir, gpg)
+        
+        if self.current_keyring is None:
+            self.current_keyring = self.keyrings[name]
+    
+    def create_keyring(self, name: str, description: str = '') -> bool:
+        """
+        Create a new key ring.
+        
+        Args:
+            name: Name of the key ring
+            description: Optional description
+            
+        Returns:
+            bool: True if the key ring was created successfully
+        """
+        if name in self.keyrings:
+            logger.warning(f"Keyring {name} already exists")
+            return False
+            
+        keyring_dir = self.base_dir / name
+        keyring_dir.mkdir(exist_ok=True)
+        
+        # Set appropriate permissions
+        keyring_dir.chmod(0o700)
+        
+        # Create a new GPG instance for this keyring
+        gpg = gnupg.GPG(gnupghome=str(keyring_dir))
+        
+        # Create the keyring
+        self.keyrings[name] = KeyRing(name, keyring_dir, gpg)
+        
+        # Set as current keyring
+        self.current_keyring = self.keyrings[name]
+        
+        logger.info(f"Created new keyring: {name}")
+        return True
+    
+    def delete_keyring(self, name: str) -> bool:
+        """
+        Delete a key ring.
+        
+        Args:
+            name: Name of the key ring to delete
+            
+        Returns:
+            bool: True if the key ring was deleted successfully
+        """
+        if name not in self.keyrings:
+            logger.warning(f"Keyring {name} not found")
+            return False
+            
+        if self.current_keyring and self.current_keyring.name == name:
+            self.current_keyring = None
+            
+        keyring_dir = self.base_dir / name
+        try:
+            shutil.rmtree(keyring_dir)
+            del self.keyrings[name]
+            logger.info(f"Deleted keyring: {name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete keyring {name}: {e}")
+            return False
+    
+    def switch_keyring(self, name: str) -> bool:
+        """
+        Switch to a different key ring.
+        
+        Args:
+            name: Name of the key ring to switch to
+            
+        Returns:
+            bool: True if the switch was successful
+        """
+        if name not in self.keyrings:
+            logger.warning(f"Keyring {name} not found")
+            return False
+            
+        self.current_keyring = self.keyrings[name]
+        logger.info(f"Switched to keyring: {name}")
+        return True
+    
+    def list_keyrings(self) -> List[Dict[str, Any]]:
+        """
+        List all available key rings.
+        
+        Returns:
+            List of key ring information dictionaries
+        """
+        result = []
+        for name, keyring in self.keyrings.items():
+            result.append({
+                'name': name,
+                'path': str(keyring.path),
+                'is_current': keyring == self.current_keyring,
+                'key_count': len(keyring.list_keys())
+            })
+        return result
+
 class KeyRing:
     """Class representing a key ring."""
     

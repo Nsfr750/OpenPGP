@@ -14,20 +14,166 @@ from pathlib import Path
 import gnupg
 from datetime import datetime, timedelta
 
-# Try to import TPM-related modules
-try:
-    import tpm2_pytss as tpm
-    TPM_SUPPORT = True
-except ImportError:
-    TPM_SUPPORT = False
-    import warnings
-    warnings.warn("TPM support not available. Install tpm2-pytss for TPM functionality.")
+# TPM support configuration
+# Set this to False to disable TPM support even if tpm2-pytss is available
+ENABLE_TPM = True
+TPM_SUPPORT = False
+
+# Try to import TPM2 support if enabled
+if ENABLE_TPM:
+    try:
+        import tpm2_pytss as tpm
+        TPM_SUPPORT = True
+    except ImportError:
+        import warnings
+        warnings.warn("TPM support not available. Install tpm2-pytss for TPM functionality.")
+else:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("TPM support is disabled by configuration")
 
 logger = logging.getLogger(__name__)
 
 class HardwareTokenError(Exception):
     """Base exception for hardware token related errors."""
     pass
+
+class HardwareToken:
+    """Class for managing hardware token operations."""
+    
+    def __init__(self, token_id: str = 'default', gpg_home: Optional[str] = None, enable_tpm: Optional[bool] = None):
+        """
+        Initialize the HardwareToken instance.
+        
+        Args:
+            token_id: Unique identifier for the hardware token
+            gpg_home: Path to the GnuPG home directory (default: ~/.gnupg)
+            enable_tpm: Override global TPM support setting (None to use global setting)
+        """
+        self.token_id = token_id
+        self.gpg_home = str(gpg_home or Path.home() / '.gnupg')
+        self.gpg = gnupg.GPG(gnupghome=self.gpg_home, use_agent=True)
+        self.manager = HardwareTokenManager(gpg_home=gpg_home)
+        
+        # Handle TPM support
+        self.tpm_support = TPM_SUPPORT
+        if enable_tpm is not None:
+            self.tpm_support = enable_tpm and TPM_SUPPORT
+            if enable_tpm and not TPM_SUPPORT:
+                logger.warning("TPM support is not available. Install tpm2-pytss and enable TPM in config.")
+    
+    def is_available(self) -> bool:
+        """
+        Check if the hardware token is available and accessible.
+        
+        Returns:
+            bool: True if the token is available, False otherwise
+        """
+        try:
+            # Try to list tokens to check connectivity
+            tokens = self.manager.list_tokens()
+            return any(t['id'] == self.token_id for t in tokens)
+        except Exception:
+            return False
+    
+    def get_info(self) -> Dict[str, Any]:
+        """
+        Get information about the hardware token.
+        
+        Returns:
+            Dictionary containing token information
+        """
+        try:
+            tokens = self.manager.list_tokens()
+            for token in tokens:
+                if token.get('id') == self.token_id:
+                    return token
+            raise HardwareTokenError(f"Token {self.token_id} not found")
+        except Exception as e:
+            raise HardwareTokenError(f"Error getting token info: {e}")
+    
+    def list_keys(self) -> List[Dict[str, Any]]:
+        """
+        List all keys available on the hardware token.
+        
+        Returns:
+            List of dictionaries containing key information
+        """
+        try:
+            token_info = self.get_info()
+            return token_info.get('keys', [])
+        except Exception as e:
+            raise HardwareTokenError(f"Error listing keys: {e}")
+    
+    def get_public_key(self, keygrip: str) -> str:
+        """
+        Get the public key from the hardware token.
+        
+        Args:
+            keygrip: The keygrip of the key to export
+            
+        Returns:
+            The public key in ASCII-armored format
+        """
+        try:
+            # Import the key to get the public key
+            fingerprint = self.manager.import_key_from_token(keygrip)
+            if not fingerprint:
+                raise HardwareTokenError(f"Failed to import key {keygrip}")
+                
+            # Export the public key
+            public_key = self.gpg.export_keys(fingerprint)
+            if not public_key:
+                raise HardwareTokenError(f"Failed to export public key for {keygrip}")
+                
+            return public_key
+            
+        except Exception as e:
+            raise HardwareTokenError(f"Error getting public key: {e}")
+    
+    def sign_data(self, data: str, keygrip: str) -> str:
+        """
+        Sign data using a key on the hardware token.
+        
+        Args:
+            data: The data to sign
+            keygrip: The keygrip of the key to use for signing
+            
+        Returns:
+            The signature in ASCII-armored format
+        """
+        try:
+            if not isinstance(data, str):
+                data = str(data)
+                
+            signature = self.manager.sign_with_token(data, keygrip)
+            if not signature:
+                raise HardwareTokenError(f"Failed to sign data with key {keygrip}")
+                
+            return signature
+            
+        except Exception as e:
+            raise HardwareTokenError(f"Error signing data: {e}")
+    
+    def verify_signature(self, data: str, signature: str) -> Tuple[bool, str]:
+        """
+        Verify a signature using a key on the hardware token.
+        
+        Args:
+            data: The original data that was signed
+            signature: The signature in ASCII-armored format
+            
+        Returns:
+            Tuple of (is_valid, status_message)
+        """
+        try:
+            if not isinstance(data, str):
+                data = str(data)
+                
+            return self.manager.verify_with_token(data, signature)
+            
+        except Exception as e:
+            return False, f"Error verifying signature: {e}"
 
 class TPMError(Exception):
     """Exception for TPM-related errors."""

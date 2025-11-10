@@ -63,7 +63,7 @@ class HelpDialog(QDialog):
         self.tabs.addTab(self._create_encryption_tab(), "Encryption")
         self.tabs.addTab(self._create_decryption_tab(), "Decryption")
         self.tabs.addTab(self._create_keys_tab(), "Key Management")
-        self.tabs.addTab(self._create_support_tab(), "Support")
+        self.tabs.addTab(self._create_security_tab(), "Security")
         self.tabs.addTab(self._create_about_tab(), "About")
         
         main_layout.addWidget(self.tabs)
@@ -108,11 +108,14 @@ class HelpDialog(QDialog):
         
         <h3>What's New in 2.1.0</h3>
         <ul>
-            <li><b>Enhanced Key Management</b>: Support for ECC and Ed25519 key generation</li>
-            <li><b>Hardware Token Support</b>: Use YubiKey and other security keys</li>
-            <li><b>Drag and Drop</b>: Easily import files and keys by dragging them into the application</li>
-            <li><b>Improved Security</b>: Enhanced passphrase strength indicators and key protection</li>
-            <li><b>Modern UI</b>: Updated interface with better theming and navigation</li>
+            <li><b>Security Tab</b>: New dedicated tab for security-related features</li>
+            <li><b>Hardware Security</b>: Comprehensive support for HSM and smart cards</li>
+            <li><b>Secure File Operations</b>: Encrypt/decrypt files with advanced options</li>
+            <li><b>Secure Messaging</b>: End-to-end encrypted messaging interface</li>
+            <li><b>Secure File Sharing</b>: Share files with access control and expiration</li>
+            <li><b>Trust Model</b>: Visualize and manage key trust relationships</li>
+            <li><b>Key Management</b>: Enhanced key generation and management</li>
+            <li><b>Dark Theme</b>: Improved dark theme with better contrast</li>
         </ul>
         
         <h3>Getting Started</h3>
@@ -281,44 +284,79 @@ class HelpDialog(QDialog):
         layout.addWidget(text_browser)
         return widget
     
-    def _create_support_tab(self):
-        """Create the support tab with donation information."""
+    def _create_security_tab(self):
+        """Create the security features tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
         
-        monero_address = "47Jc6MC47WJVFhiQFYwHyBNQP5BEsjUPG6tc8R37FwcTY8K5Y3LvFzveSXoGiaDQSxDrnCUBJ5WBj6Fgmsfix8VPD4w3gXF"
+        text = """
+        <h2>Security Features in OpenPGP 2.1.0</h2>
         
-        support_text = f"""
-        <h2>Support OpenPGP Development</h2>
-        <p>Thank you for considering supporting the development of OpenPGP! Your contribution helps ensure the continued improvement and maintenance of this open-source project.</p>
+        <h3>Hardware Security Module (HSM) Support</h3>
+        <p>OpenPGP includes comprehensive support for Hardware Security Modules (HSM) and smart cards, 
+        allowing you to securely store your private keys in dedicated hardware.</p>
         
-        <h3>Monero (XMR) Donation</h3>
-        <p>You can support the project by donating Monero (XMR) to the following address:</p>
-        
-        <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; font-family: monospace; word-break: break-all;">
-            {monero_address}
-        </div>
-        
-        <p>To copy the address, simply click on it and press Ctrl+C.</p>
-        
-        <h3>Other Ways to Contribute</h3>
+        <h4>Features:</h4>
         <ul>
-            <li>Star the project on <a href="https://github.com/Nsfr750/OpenPGP">GitHub</a></li>
-            <li>Report bugs and suggest new features</li>
-            <li>Share the application with others</li>
-            <li>Contribute code or documentation</li>
+            <li>Support for YubiKey and other PKCS#11 compatible devices</li>
+            <li>Secure key generation directly on the hardware token</li>
+            <li>PIN and touch protection for private key operations</li>
+            <li>Hardware-backed encryption and signing operations</li>
         </ul>
         
-        <p>Your support is greatly appreciated!</p>
+        <h3>Secure File Operations</h3>
+        <p>Enhanced file encryption with advanced security options:</p>
+        <ul>
+            <li>Multiple encryption algorithms (AES-256, ChaCha20, Twofish)</li>
+            <li>File integrity verification with HMAC</li>
+            <li>Automatic compression before encryption</li>
+            <li>Secure file wiping after operations</li>
+        </ul>
+        
+        <h3>Secure Messaging</h3>
+        <p>End-to-end encrypted messaging with the following features:</p>
+        <ul>
+            <li>Asymmetric encryption using recipient's public key</li>
+            <li>Digital signatures for message authentication</li>
+            <li>Support for both text and file attachments</li>
+            <li>Perfect Forward Secrecy (PFS) for enhanced security</li>
+        </ul>
+        
+        <h3>Secure File Sharing</h3>
+        <p>Securely share files with fine-grained access control:</p>
+        <ul>
+            <li>Password protection for shared files</li>
+            <li>Expiration dates for shared links</li>
+            <li>Recipient-based access control</li>
+            <li>Download limits for shared files</li>
+        </ul>
+        
+        <h3>Trust Model</h3>
+        <p>Advanced trust management for PGP keys:</p>
+        <ul>
+            <li>Visual representation of trust relationships</li>
+            <li>Web of Trust (WOT) visualization</li>
+            <li>Trust level assignment for keys</li>
+            <li>Automatic trust path validation</li>
+        </ul>
+        
+        <h3>Best Practices</h3>
+        <ul>
+            <li>Always use hardware tokens for storing private keys when possible</li>
+            <li>Regularly update your software to get the latest security patches</li>
+            <li>Verify the identity of the people you communicate with</li>
+            <li>Use strong, unique passphrases for your keys</li>
+            <li>Regularly back up your keys and important data</li>
+        </ul>
         """
         
         text_browser = QTextBrowser()
         text_browser.setOpenExternalLinks(True)
-        text_browser.setHtml(support_text)
+        text_browser.setHtml(text)
         
         layout.addWidget(text_browser)
         return widget
-    
+        
     def _create_about_tab(self):
         """Create the about tab."""
         widget = QWidget()
@@ -353,7 +391,7 @@ class HelpDialog(QDialog):
             </ul>
             
             <h3>License</h3>
-            <p>© 2024-2025 Nsfr750 - All rights reserved</p>
+            <p>© Copyright 2024-2025 Nsfr750. All Rights Reserved</p>
             <p>Licensed under the GPL v3.0 License</p>
             
             <p>

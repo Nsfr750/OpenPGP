@@ -58,7 +58,7 @@ class MenuBar(QMenuBar):
         
         view_log_action = QAction("&View Log", self)
         view_log_action.triggered.connect(self.show_log_viewer)
-        view_log_action.setShortcut(QKeySequence("F4"))
+        view_log_action.setShortcut(QKeySequence("F5"))
         log_menu.addAction(view_log_action)
         
         # Help menu
@@ -69,16 +69,21 @@ class MenuBar(QMenuBar):
         help_action.setShortcut(QKeySequence("F1"))
         help_menu.addAction(help_action)
         
+        wiki_action = QAction("&Wiki", self)
+        wiki_action.triggered.connect(self.show_wiki)
+        wiki_action.setShortcut(QKeySequence("F2"))
+        help_menu.addAction(wiki_action)
+        
         help_menu.addSeparator()
         
         about_action = QAction("&About", self)
         about_action.triggered.connect(self.show_about)
-        about_action.setShortcut(QKeySequence("F2"))
+        about_action.setShortcut(QKeySequence("F3"))
         help_menu.addAction(about_action)
         
         sponsor_action = QAction("&Sponsor", self)
         sponsor_action.triggered.connect(self.show_sponsor)
-        sponsor_action.setShortcut(QKeySequence("F3"))
+        sponsor_action.setShortcut(QKeySequence("F4"))
         help_menu.addAction(sponsor_action)
     
     def show_about(self):
@@ -90,7 +95,13 @@ class MenuBar(QMenuBar):
         """Show the Help window."""
         self.help_window = HelpWindow()
         self.help_window.show()
-        
+
+    def show_wiki(self):
+        """Open the GitHub Wiki in the default web browser."""
+        from PySide6.QtGui import QDesktopServices
+        from PySide6.QtCore import QUrl
+        QDesktopServices.openUrl(QUrl("https://github.com/Nsfr750/OpenPGP/wiki"))
+
     def show_log_viewer(self):
         """Show the Log Viewer window."""
         try:

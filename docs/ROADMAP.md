@@ -1,60 +1,91 @@
 # OpenPGP - Development Roadmap
 
-This document outlines the planned development roadmap for the OpenPGP application. It provides a high-level overview of upcoming features, improvements, and long-term goals.
+This document outlines the development roadmap for the OpenPGP application, including completed features and future plans.
 
-## Version 2.2.0 (Planned)
-
-### Key Features
-- **Enhanced Key Management**
-  - Support for ECC (Elliptic Curve Cryptography) keys
-  - Ed25519 signature support
-  - Key expiration and revocation
-  
-- **UI/UX Improvements**
-  - Dark/light theme toggle
-  - Improved key visualization
-  - Responsive design for different screen sizes
-
-- **Security Enhancements**
-  - Hardware token support (YubiKey, etc.)
-  - Improved passphrase handling
-  - Key backup and recovery options
-
-## Version 2.3.0 (Future)
+## Version 2.1.0 (Current)
 
 ### Key Features
-- **Advanced Features**
-  - Drag & drop support for files and keys
-  - Batch processing of files
-  - Integration with password managers
+- **Blockchain Identity**
+  - Blockchain-based identity verification
+  - Secure key sharing with fine-grained permissions
+  - Identity verification requests
+
+- **Enhanced Security**
+  - End-to-end encryption for files and messages
+  - Secure file sharing with access control
+  - Hardware token support (YubiKey and compatible devices)
+  - Multiple encryption algorithm support
+
+- **Modern UI/UX**
+  - Redesigned interface with dark/light theme support
+  - Drag and drop functionality
+  - Improved keyboard navigation
+  - Comprehensive help system
+
+## Version 2.2.0 (Q1 2024)
+
+### Planned Features
+- **Key Server Integration**
+  - PGP key server support
+  - Automatic key discovery and verification
+  - Key synchronization across devices
+
+- **Advanced Security**
+  - Smart card and TPM support
+  - Hardware Security Module (HSM) integration
+  - Enhanced key protection mechanisms
 
 - **Collaboration**
+  - Secure group messaging
   - Shared key management
   - Team access controls
-  - Audit logging
 
-## Version 3.0.0 (Long-term)
+## Version 2.3.0 (Q2 2024)
+
+### Planned Features
+- **Advanced File Management**
+  - Encrypted file systems support
+  - Secure file shredding
+  - File versioning and history
+
+- **Enterprise Features**
+  - Centralized key management
+  - Compliance and audit logging
+  - Role-based access control
+  - Integration with enterprise identity providers
+
+## Version 3.0.0 (H2 2024)
 
 ### Major Updates
 - **New Architecture**
   - Plugin system for extensibility
-  - API for third-party integrations
-  - Headless mode for server-side operations
+  - Public API for third-party integrations
+  - Headless mode for server operations
+  - Microservices architecture for scalability
 
 - **Cross-Platform**
-  - Native builds for Windows, macOS, and Linux
-  - Mobile app companion
-  - Browser extension
+  - Native builds for all major platforms
+  - Mobile applications (iOS/Android)
+  - Browser extension for web integration
+  - Command-line interface (CLI) version
 
 ## Contributing
 
-We welcome contributions! If you're interested in helping with any of these features:
+We welcome contributions from the community! If you'd like to contribute to the development of OpenPGP, please see our [Contributing Guidelines](CONTRIBUTING.md).
 
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+## Release Schedule
 
-Please check our [Contributing Guidelines](CONTRIBUTING.md) for more details.
+- **Stable Releases**: Quarterly feature releases (Q1, Q2, Q3, Q4)
+- **Patch Releases**: As needed for critical bug fixes and security updates
+- **LTS Version**: Annual major release with extended support
+
+## Feature Requests
+
+Have an idea for a new feature? Please open an issue on our [GitHub repository](https://github.com/Nsfr750/OpenPGP) with the 'enhancement' label.
+
+## Reporting Issues
+
+Found a bug or security vulnerability? Please report it by [creating an issue](https://github.com/Nsfr750/OpenPGP/issues/new/choose) with detailed steps to reproduce.
 
 ## Feedback
 
