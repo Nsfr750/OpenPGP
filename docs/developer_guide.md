@@ -12,11 +12,52 @@ Welcome, developer! This guide provides the essentials for contributing to and e
 - `requirements.txt` — Python dependencies.
 
 ## Key Technologies
-- **Python 3.x**
-- **Tkinter** — GUI framework (with ttkbootstrap for theming)
+- **Python 3.9+**
+- **PySide6** — Modern GUI framework with Qt
 - **pgpy** — OpenPGP cryptography
 - **cryptography** — SSL certificate generation
-- **Pillow** — (optional) for icons
+- **Pillow** — Image processing
+- **Logging** — Custom logging system with file rotation
+
+## Logging System (v2.1.0+)
+
+The application features an enhanced logging system with the following capabilities:
+
+### Core Components
+- `utils/logger.py`: Central logging module
+- `gui/log_viewer.py`: Advanced log viewer UI
+- Log files are stored in the `logs/` directory
+
+### Key Features
+- Multiple log levels (DEBUG, INFO, WARNING, ERROR)
+- Automatic log rotation
+- Thread-safe logging
+- File and console handlers
+- Exception handling with tracebacks
+
+### Usage in Code
+```python
+from utils.logger import log_info, log_warning, log_error, log_exception
+
+# Basic logging
+log_info("Application started")
+log_warning("Configuration file not found, using defaults")
+log_error("Failed to connect to server")
+
+# Exception logging
+try:
+    # Your code here
+    pass
+except Exception as e:
+    log_exception(e, "An error occurred")
+```
+
+### Log Viewer Integration
+The Log Viewer provides a user interface for viewing and filtering logs:
+- Real-time log display
+- Level-based filtering
+- Text search
+- File selection
 
 ## How to Contribute
 1. Fork and clone the repository.

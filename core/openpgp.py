@@ -91,9 +91,32 @@ def load_pgp_key(filename: str, passphrase: Optional[str] = None) -> PGPKey:
 
 # --- OpenPGP Encryption/Decryption ---
 def encrypt_message(message: str, pubkey: PGPKey) -> str:
-    """Encrypt a message with a public key."""
+    """Encrypt a message with a public key.
+    
+    Args:
+        message: The message to encrypt
+        pubkey: The public key to encrypt with
+        
+    Returns:
+        str: The encrypted message in ASCII armor format
+    """
     try:
-        msg = PGPMessage.new(message)
+        # Create a new message with compression disabled
+        msg = PGPMessage.new(message, compression=CompressionAlgorithm.Uncompressed)
+        
+        # Get the key's preferred compression algorithms if available
+        prefs = getattr(pubkey, 'preferred_compression', None)
+        if prefs and len(prefs) > 0:
+            # Use the most preferred compression algorithm
+            compression = prefs[0]
+        else:
+            # Default to ZLIB if no preferences are set
+            compression = CompressionAlgorithm.ZLIB
+            
+        # Set the compression for the message
+        msg._compression = compression
+        
+        # Encrypt the message
         encrypted = pubkey.encrypt(msg)
         return str(encrypted)
     except Exception as e:

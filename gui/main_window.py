@@ -15,7 +15,7 @@ from PySide6.QtGui import (
 from .menu import MenuBar
 
 from utils.password_utils import PasswordGenerator, generate_pbkdf2_hash, verify_password
-from openpgp import (
+from core.openpgp import (
     generate_pgp_keypair, save_pgp_key, load_pgp_key,
     encrypt_message, decrypt_message, sign_message, 
     verify_signature, generate_ssl_cert
@@ -596,14 +596,21 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Generating PGP key pair (this may take a few minutes)...")
             QApplication.processEvents()  # Update UI
             
-            self.public_key, self.private_key = generate_pgp_keypair(
+            # Generate the PGP key pair (returns a single PGPKey object)
+            self.private_key = generate_pgp_keypair(
                 name=name,
                 email=email,
                 passphrase=passphrase
             )
             
+            # Get the public key from the private key
+            self.public_key = self.private_key.pubkey
+            
             self.key_loaded = True
-            key_info = f"Name: {name}\nEmail: {email}\nKey ID: {self.public_key.key_id}"
+            # Use fingerprint instead of key_id and format it for better readability
+            key_fingerprint = self.public_key.fingerprint
+            formatted_fingerprint = ' '.join([key_fingerprint[i:i+4] for i in range(0, len(key_fingerprint), 4)])
+            key_info = f"Name: {name}\nEmail: {email}\nKey ID: {formatted_fingerprint[-16:].upper()}\nFingerprint: {formatted_fingerprint}"
             self.key_info.setPlainText(key_info)
             self.statusBar().showMessage("PGP key pair generated successfully", 3000)
             
@@ -678,24 +685,26 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please enter a message to decrypt")
             return
             
-        try:
-            if self.private_key.is_protected:
-                passphrase, ok = QInputDialog.getText(
-                    self,
-                    "Passphrase",
-                    "Enter passphrase:",
-                    QLineEdit.Password
-                )
-                if not ok:
-                    return  # User cancelled
-                
-                self.private_key.decrypt(passphrase)
-            
-            decrypted = decrypt_message(message, self.private_key)
-            self.message_output.setPlainText(decrypted)
-            self.statusBar().showMessage("Message decrypted successfully", 3000)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Decryption failed: {str(e)}")
+            try:
+                if self.private_key.is_protected:
+                    passphrase, ok = QInputDialog.getText(
+                        self,
+                        "Passphrase",
+                        "Enter passphrase:",
+                        QLineEdit.Password
+                    )
+                    if not ok:
+                        return  # User cancelled
+                    
+                    # Use a context manager to handle the unlocked key
+                    with self.private_key.unlock(passphrase):
+                        decrypted = decrypt_message(message, self.private_key, passphrase=passphrase)
+                else:
+                    decrypted = decrypt_message(message, self.private_key)
+                self.message_output.setPlainText(decrypted)
+                self.statusBar().showMessage("Message decrypted successfully", 3000)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Decryption failed: {str(e)}")
     
     def sign_message(self):
         """Sign a message using the loaded private key."""
@@ -719,33 +728,57 @@ class MainWindow(QMainWindow):
                 if not ok:
                     return  # User cancelled
                 
-                self.private_key.decrypt(passphrase)
-            
-            signature = sign_message(message, self.private_key)
+                # Use a context manager to handle the unlocked key
+                with self.private_key.unlock(passphrase):
+                    signature = sign_message(message, self.private_key)
+            else:
+                signature = sign_message(message, self.private_key)
             self.message_output.setPlainText(signature)
             self.statusBar().showMessage("Message signed successfully", 3000)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Signing failed: {str(e)}")
     
     def verify_message(self):
-        """Verify a signed message using the loaded public key."""
+        """Verify a signed message using the loaded public key.
+        
+        The message should be in the format:
+        -----BEGIN PGP SIGNED MESSAGE-----
+        <message>
+        -----BEGIN PGP SIGNATURE-----
+        <signature>
+        -----END PGP SIGNATURE-----
+        """
         if not self.key_loaded or not self.public_key:
             QMessageBox.warning(self, "Warning", "Please load a public key first")
             return
             
-        message = self.message_input.toPlainText().strip()
-        if not message:
-            QMessageBox.warning(self, "Warning", "Please enter a message to verify")
+        signed_message = self.message_input.toPlainText().strip()
+        if not signed_message:
+            QMessageBox.warning(self, "Warning", "Please enter a signed message to verify")
             return
             
         try:
-            is_valid = verify_signature(message, self.public_key)
-            if is_valid:
-                self.message_output.setPlainText("✓ Signature is valid")
-                self.statusBar().showMessage("Signature verified successfully", 3000)
+            # Try to parse the message and signature
+            if "-----BEGIN PGP SIGNED MESSAGE-----" in signed_message:
+                # Extract the message and signature from the signed message
+                parts = signed_message.split("-----BEGIN PGP SIGNATURE-----")
+                if len(parts) != 2:
+                    raise ValueError("Invalid signed message format")
+                    
+                message = parts[0].replace("-----BEGIN PGP SIGNED MESSAGE-----\n", "").strip()
+                signature_str = "-----BEGIN PGP SIGNATURE-----\n" + parts[1].strip()
+                
+                is_valid = verify_signature(message, signature_str, self.public_key)
+                
+                if is_valid:
+                    self.message_output.setPlainText(f"✓ Signature is valid\n\nMessage:\n{message}")
+                    self.statusBar().showMessage("Signature verified successfully", 3000)
+                else:
+                    self.message_output.setPlainText("✗ Invalid signature")
+                    self.statusBar().showMessage("Signature verification failed", 3000)
             else:
-                self.message_output.setPlainText("✗ Invalid signature")
-                self.statusBar().showMessage("Signature verification failed", 3000)
+                QMessageBox.warning(self, "Warning", "The message doesn't appear to be a valid PGP signed message")
+                
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Verification failed: {str(e)}")
     

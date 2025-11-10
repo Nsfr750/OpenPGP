@@ -1,16 +1,18 @@
 # OpenPGP GUI App
 
-**Version:** 2.0.0  
+**Version:** 2.1.0  
 **Author:** Nsfr750  
 **License:** GNU General Public License v3.0 (GPLv3). See LICENSE for details.
 
 ## Features
 - Modern UI with PySide6 and dark theme
+
 - **Password Management:**
   - Generate secure, customizable passwords
   - PBKDF2-SHA256 password hashing
   - Password strength validation
   - Copy to clipboard with error handling
+
 - **PGP Tools:**
   - Generate, load, and export OpenPGP key pairs
   - Set key name, email, and passphrase
@@ -19,12 +21,14 @@
   - Export public key in ASCII-armored format (.asc)
   - Visualize key fingerprint for security checks
   - Generate SSL certificates with custom CN
+
 - **Security Features:**
   - Secure password generation and hashing
   - Clear/reset all fields with one click
   - Centralized logging system (info, warning, error, and uncaught exceptions)
   - Log Viewer with real-time filtering (ALL, INFO, WARNING, ERROR)
   - Automatic traceback capture and display
+
 - **User Experience:**
   - Dark theme for better visibility
   - Responsive and intuitive interface
@@ -42,12 +46,14 @@
 
 ## Installation
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Nsfr750/OpenPGP.git
    cd OpenPGP
    ```
 
 2. Create and activate a virtual environment (recommended):
+
    ```bash
    python -m venv venv
    .\venv\Scripts\activate  # On Windows
@@ -55,6 +61,7 @@
    ```
 
 3. Install the required packages:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -62,6 +69,7 @@
 ## Usage
 
 ### Running the Application
+
 ```bash
 python main.py
 ```

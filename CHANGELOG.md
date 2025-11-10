@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0] - 2025-11-10
+### New Features
+- Enhanced Log Viewer with file selection and advanced filtering
+- Added support for viewing multiple log files from the logs directory
+- Improved error handling and user feedback in the log viewer
+- Added keyboard shortcuts for common actions (F1-F4)
+- Updated documentation for new features
+
 ## [2.0.0] - 2025-08-08
 ### Major Changes
 - **Complete UI Migration to PySide6**
