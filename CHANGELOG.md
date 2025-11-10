@@ -1,12 +1,60 @@
 # Changelog
 
 ## [2.1.0] - 2025-11-10
-### New Features
-- Enhanced Log Viewer with file selection and advanced filtering
-- Added support for viewing multiple log files from the logs directory
-- Improved error handling and user feedback in the log viewer
-- Added keyboard shortcuts for common actions (F1-F4)
-- Updated documentation for new features
+
+### 🚀 New Features
+
+#### 🔑 Enhanced Key Management
+- Added support for blockchain-based identity verification
+- Implemented secure key sharing with fine-grained permissions
+- Added hardware token support (YubiKey and compatible devices)
+- Enhanced key backup and recovery options
+- Added key expiration and revocation support
+
+#### 🔒 Advanced Security
+- Implemented end-to-end encryption for files and messages
+- Added secure file sharing with access control
+- Enhanced passphrase strength indicators
+- Improved secure key storage with hardware protection
+- Added support for multiple encryption algorithms
+
+#### 🖥️ Modern Interface
+- Redesigned UI with dark/light theme support
+- Added drag and drop functionality for files and keys
+- Improved key and file management interface
+- Enhanced keyboard navigation and accessibility
+- Added comprehensive help and documentation
+
+#### 🔄 File Operations
+- Added secure file sharing with access control
+- Implemented file versioning and history
+- Added batch processing for multiple files
+- Improved file encryption/decryption performance
+
+### 🛠️ Improvements
+
+- Optimized memory usage for large files
+- Improved error handling and recovery
+- Enhanced logging and debugging capabilities
+- Updated dependencies to latest secure versions
+- Improved multi-language support
+
+### 🐛 Bug Fixes
+- Fixed issues with key import/export
+- Resolved UI layout problems on high-DPI displays
+- Fixed memory leaks in file operations
+- Addressed security vulnerabilities in crypto operations
+- File encryption/decryption support
+- Message signing and verification
+- Log viewer with advanced filtering
+- Multiple language support
+
+#### ⚡ Performance & Stability
+
+- Faster key generation and operations
+- Reduced memory usage
+- Improved error handling and recovery
+- Better cross-platform compatibility
 
 ## [2.0.0] - 2025-08-08
 ### Major Changes

@@ -10,6 +10,8 @@ from .log_viewer import LogViewerDialog as LogViewerWindow
 
 class MenuSignals(QObject):
     export_pubkey = Signal()
+    backup_key = Signal()
+    recover_key = Signal()
     quit_app = Signal()
 
 class MenuBar(QMenuBar):
@@ -22,15 +24,30 @@ class MenuBar(QMenuBar):
         # File menu
         file_menu = self.addMenu("🗃️ &File")
         
-        # Export key action
+        # Key Management submenu
+        key_menu = file_menu.addMenu("&Key Management")
+        
+        # Export public key action
         export_action = QAction("&Export Public Key", self)
         export_action.triggered.connect(self.signals.export_pubkey)
+        
+        # Backup key action
+        backup_action = QAction("&Backup Key", self)
+        backup_action.triggered.connect(self.signals.backup_key)
+        backup_action.setShortcut(QKeySequence("Ctrl+B"))
+        
+        # Recover key action
+        recover_action = QAction("&Recover Key", self)
+        recover_action.triggered.connect(self.signals.recover_key)
+        recover_action.setShortcut(QKeySequence("Ctrl+R"))
         
         # Exit action
         exit_action = QAction("E&xit", self)
         
         # Add actions to menu
-        file_menu.addAction(export_action)
+        key_menu.addAction(export_action)
+        key_menu.addAction(backup_action)
+        key_menu.addAction(recover_action)
         file_menu.addSeparator()
         exit_action.setShortcut(QKeySequence.Quit)
         exit_action.triggered.connect(self.signals.quit_app)

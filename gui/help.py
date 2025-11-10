@@ -20,10 +20,10 @@ import logging
 
 # Get version information
 try:
-    from ..version import get_version
+    from version import get_version
     VERSION = get_version()
 except ImportError:
-    VERSION = "1.0.0"
+    VERSION = "2.1.0"
 
 logger = logging.getLogger('OpenPGP')
 
@@ -102,23 +102,33 @@ class HelpDialog(QDialog):
         
         # Welcome message
         welcome_text = """
-        <h2>Welcome to OpenPGP</h2>
+        <h2>Welcome to OpenPGP v2.1.0</h2>
         <p>Thank you for using OpenPGP, a secure and easy-to-use application for PGP encryption, 
-        decryption, and key management.</p>
+        decryption, and key management with advanced security features.</p>
+        
+        <h3>What's New in 2.1.0</h3>
+        <ul>
+            <li><b>Enhanced Key Management</b>: Support for ECC and Ed25519 key generation</li>
+            <li><b>Hardware Token Support</b>: Use YubiKey and other security keys</li>
+            <li><b>Drag and Drop</b>: Easily import files and keys by dragging them into the application</li>
+            <li><b>Improved Security</b>: Enhanced passphrase strength indicators and key protection</li>
+            <li><b>Modern UI</b>: Updated interface with better theming and navigation</li>
+        </ul>
         
         <h3>Getting Started</h3>
         <ol>
-            <li>Generate a new key pair or import existing keys</li>
+            <li>Generate a new key pair (RSA, ECC, or Ed25519) or import existing keys</li>
             <li>Encrypt files or messages with public keys</li>
-            <li>Decrypt received files with your private key</li>
-            <li>Manage your keys and contacts</li>
+            <li>Decrypt received files with your private key or hardware token</li>
+            <li>Manage your keys, contacts, and security settings</li>
         </ol>
         
         <h3>Quick Tips</h3>
         <ul>
-            <li>Always keep your private key secure and never share it</li>
-            <li>Regularly back up your keys</li>
+            <li>Always keep your private key and hardware tokens secure</li>
+            <li>Regularly back up your keys using the built-in backup feature</li>
             <li>Verify the fingerprint of public keys before using them</li>
+            <li>Use hardware tokens for enhanced security of your private keys</li>
         </ul>
         """
         
@@ -215,20 +225,49 @@ class HelpDialog(QDialog):
         
         <h3>Generating a New Key Pair</h3>
         <ol>
-            <li>Go to the 'Keys' tab</li>
+            <li>Go to the 'PGP Tools' tab</li>
             <li>Click 'Generate New Key'</li>
+            <li>Select key type (RSA, ECC, or Ed25519)</li>
             <li>Enter your name and email address</li>
-            <li>Choose a strong passphrase</li>
+            <li>Choose a strong passphrase (use the strength meter as a guide)</li>
+            <li>For hardware tokens, select 'Use Hardware Token' and follow the prompts</li>
             <li>Click 'Generate' and wait for the process to complete</li>
         </ol>
         
+        <h3>Key Types</h3>
+        <ul>
+            <li><b>RSA</b>: Compatible with most PGP implementations</li>
+            <li><b>ECC</b>: More efficient than RSA with similar security</li>
+            <li><b>Ed25519</b>: Modern, high-security elliptic curve algorithm</li>
+        </ul>
+        
+        <h3>Hardware Token Support</h3>
+        <p>OpenPGP supports hardware security keys like YubiKey for storing your private keys securely.
+        To use a hardware token:</p>
+        <ol>
+            <li>Insert your hardware token</li>
+            <li>Select 'Use Hardware Token' when generating a new key</li>
+            <li>Follow the on-screen instructions to set up your token</li>
+            <li>Your private key will be stored securely on the token</li>
+        </ol>
+        
         <h3>Importing Keys</h3>
-        <p>You can import public keys from files or by pasting them directly. 
-        Always verify the fingerprint of any key before importing it.</p>
+        <p>You can import public keys by:</p>
+        <ul>
+            <li>Clicking 'Import' and selecting a key file</li>
+            <li>Pasting the key directly into the text area</li>
+            <li>Dropping a key file into the application window</li>
+        </ul>
+        <p>Always verify the fingerprint of any key before importing it.</p>
         
         <h3>Exporting Keys</h3>
         <p>You can export your public key to share with others or back up your private key. 
-        Keep your private key secure and never share it.</p>
+        Keep your private key secure and never share it. For hardware tokens, the private key 
+        cannot be exported - only the public key can be shared.</p>
+        
+        <h3>Key Backup and Recovery</h3>
+        <p>Use the 'Backup Key' feature to create a secure backup of your key pair. 
+        You can back up to a file or print a paper copy. Store backups in a secure location.</p>
         
         <h3>Key Trust and Verification</h3>
         <p>Always verify the fingerprint of any key before trusting it. 
@@ -292,15 +331,26 @@ class HelpDialog(QDialog):
         
         about_text = f"""
         <div style="text-align: center;">
-            <h2>OpenPGP</h2>
-            <p>Version {VERSION}</p>
+            <h2>OpenPGP v{VERSION}</h2>
             <p>A secure and easy-to-use application for PGP encryption, decryption, and key management.</p>
             
             <h3>System Information</h3>
             <table style="margin: 0 auto; text-align: left;">
                 <tr><td><b>Operating System:</b></td><td>{system} {release}</td></tr>
                 <tr><td><b>Python Version:</b></td><td>{python_version}</td></tr>
+                <tr><td><b>Key Types:</b></td><td>RSA, ECC, Ed25519</td></tr>
+                <tr><td><b>Hardware Tokens:</b></td><td>YubiKey and compatible</td></tr>
             </table>
+            
+            <h3>Features</h3>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Secure key generation and management</li>
+                <li>File and message encryption/decryption</li>
+                <li>Digital signatures and verification</li>
+                <li>Hardware token support</li>
+                <li>Drag and drop interface</li>
+                <li>Key backup and recovery</li>
+            </ul>
             
             <h3>License</h3>
             <p>© 2024-2025 Nsfr750 - All rights reserved</p>
@@ -308,7 +358,8 @@ class HelpDialog(QDialog):
             
             <p>
                 <a href="https://github.com/Nsfr750/OpenPGP">GitHub Repository</a> | 
-                <a href="https://github.com/Nsfr750/OpenPGP/issues">Report Issues</a>
+                <a href="https://github.com/Nsfr750/OpenPGP/issues">Report Issues</a> |
+                <a href="https://github.com/Nsfr750/OpenPGP/releases">Release Notes</a>
             </p>
         </div>
         """
