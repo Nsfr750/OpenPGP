@@ -91,3 +91,4 @@ openpgp.spec
 clean_pycache.py
 clear_cache.py
 TXT
+firma.bat
