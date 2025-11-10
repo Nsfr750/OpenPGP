@@ -10,6 +10,19 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Any, Union
 import gnupg
+import subprocess
+
+def is_gnupg_installed() -> bool:
+    """Check if GnuPG is installed and available in the system PATH."""
+    try:
+        # Try to get the GnuPG version
+        result = subprocess.run(['gpg', '--version'], 
+                              capture_output=True, 
+                              text=True,
+                              creationflags=subprocess.CREATE_NO_WINDOW)
+        return result.returncode == 0
+    except FileNotFoundError:
+        return False
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +59,61 @@ class KeyringManager:
     def _load_keyring(self, name: str):
         """Load a single key ring."""
         keyring_dir = self.base_dir / name
+        keyring_dir.mkdir(parents=True, exist_ok=True)
         gpg = gnupg.GPG(gnupghome=str(keyring_dir))
         self.keyrings[name] = KeyRing(name, keyring_dir, gpg)
+    
+    def add_key(self, key_data: Union[str, bytes], key_type: str = 'public') -> bool:
+        """
+        Add a key to the current keyring.
         
-        if self.current_keyring is None:
+        Args:
+            key_data: The key data (ASCII-armored or binary)
+            key_type: Type of key ('public' or 'private')
+            
+        Returns:
+            bool: True if the key was added successfully
+        """
+        if not self.current_keyring:
+            # If no keyring is selected, use the default one
+            if 'default' not in self.keyrings:
+                self.create_keyring('default')
+            self.switch_keyring('default')
+        
+        try:
+            if isinstance(key_data, bytes):
+                key_data = key_data.decode('utf-8', errors='replace')
+            
+            # Import the key
+            import_result = self.current_keyring.gpg.import_keys(key_data)
+            
+            if import_result.count == 0:
+                logger.error("No keys found in the provided data")
+                return False
+                
+            # Get the fingerprint of the imported key
+            fingerprint = import_result.fingerprints[0]
+            
+            # Update metadata
+            if not hasattr(self.current_keyring, '_metadata'):
+                self.current_keyring._metadata = self.current_keyring._load_metadata()
+                
+            self.current_keyring._metadata['keys'][fingerprint] = {
+                'type': key_type,
+                'imported': self.current_keyring._now(),
+                'tags': [],
+                'metadata': {}
+            }
+            
+            # Save the updated metadata
+            self.current_keyring._save_metadata()
+            
+            logger.info(f"Successfully imported {import_result.count} key(s)")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to import key: {e}")
+            return False
             self.current_keyring = self.keyrings[name]
     
     def create_keyring(self, name: str, description: str = '') -> bool:
@@ -146,6 +210,28 @@ class KeyringManager:
                 'key_count': len(keyring.list_keys())
             })
         return result
+        
+    def list_keys(self, key_type: Optional[str] = None, 
+                 tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        List keys in the current keyring.
+        
+        Args:
+            key_type: Optional filter by key type ('public' or 'private')
+            tags: Optional filter by tags
+            
+        Returns:
+            List of key information dictionaries
+        """
+        if not self.current_keyring:
+            # If no keyring is selected, try to use the default one
+            if 'default' in self.keyrings:
+                self.switch_keyring('default')
+            else:
+                # If no keyrings exist, create a default one
+                self.create_keyring('default')
+                
+        return self.current_keyring.list_keys(key_type, tags)
 
 class KeyRing:
     """Class representing a key ring."""

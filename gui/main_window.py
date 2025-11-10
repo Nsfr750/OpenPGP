@@ -4,7 +4,8 @@ from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QTextEdit, QComboBox, QCheckBox,
     QMessageBox, QFileDialog, QApplication, QSizePolicy, QFrame, 
-    QSpinBox, QGroupBox, QFormLayout, QSplitter, QInputDialog, QProgressBar
+    QSpinBox, QGroupBox, QFormLayout, QSplitter, QInputDialog, QProgressBar,
+    QDialog
 )
 from PySide6.QtCore import Qt, QSize, Signal, Slot, QSettings, QMimeData, QUrl
 from PySide6.QtGui import (
@@ -21,6 +22,7 @@ from .security import SecurityTab
 from .dialogs.tpm_settings_dialog import TpmSettingsDialog
 
 from utils.password_utils import PasswordGenerator, generate_pbkdf2_hash, verify_password
+from pgpy import PGPKey
 from core.openpgp import (
     generate_pgp_keypair, save_pgp_key, load_pgp_key,
     encrypt_message, decrypt_message, sign_message, 
@@ -297,50 +299,69 @@ class MainWindow(QMainWindow):
             )
     
     def load_key_from_file(self, file_path):
-        """Load a key from a file."""
+        """Load a PGP key from a file."""
         try:
+            # Read the key file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                key_data = f.read().strip()
+            
+            from pgpy import PGPKey
+            
             # Try to load as private key first
-            self.private_key = load_pgp_key(file_path)
-            self.public_key = self.private_key.pubkey()
+            try:
+                self.private_key, _ = PGPKey.from_blob(key_data)
+                self.public_key = self.private_key.pubkey
+                key_type = "private"
+            except Exception as e1:
+                # If loading as private key fails, try as public key
+                try:
+                    self.private_key = None
+                    self.public_key, _ = PGPKey.from_blob(key_data)
+                    key_type = "public"
+                except Exception as e2:
+                    # Try one more time with the raw key data
+                    try:
+                        if 'PRIVATE KEY' in key_data:
+                            self.private_key = PGPKey()
+                            self.private_key.parse(key_data)
+                            self.public_key = self.private_key.pubkey
+                            key_type = "private"
+                        else:
+                            self.private_key = None
+                            self.public_key = PGPKey()
+                            self.public_key.parse(key_data)
+                            key_type = "public"
+                    except Exception as e3:
+                        raise ValueError(f"Failed to parse key: {e1}\n{e2}\n{e3}")
+            
+            if not hasattr(self, 'public_key') or self.public_key is None:
+                raise ValueError("Failed to load any valid PGP key from the file")
+            
             self.key_loaded = True
             
             # Update UI
             key_fingerprint = self.public_key.fingerprint
-            formatted_fingerprint = ' '.join([key_fingerprint[i:i+4] for i in range(0, len(key_fingerprint), 4)])
-            key_info = f"Loaded Key:\nFingerprint: {formatted_fingerprint}"
+            if key_fingerprint:
+                formatted_fingerprint = ' '.join([key_fingerprint[i:i+4] for i in range(0, len(key_fingerprint), 4)])
+                key_info = f"Loaded {key_type} key:\nFingerprint: {formatted_fingerprint}"
+            else:
+                key_info = f"Loaded {key_type} key (no fingerprint available)"
             
             if hasattr(self, 'key_info'):
                 self.key_info.setText(key_info)
                 
-            self.statusBar().showMessage(f"Successfully loaded key from {file_path}", 3000)
+            self.statusBar().showMessage(f"Successfully loaded {key_type} key from {file_path}", 3000)
+            return True
             
         except Exception as e:
-            # If loading as private key fails, try as public key
-            try:
-                with open(file_path, 'r') as f:
-                    key_data = f.read()
-                    
-                from pgpy import PGPPublicKey
-                self.public_key = PGPPublicKey()
-                self.public_key.parse(key_data)
-                self.key_loaded = True
-                
-                # Update UI
-                key_fingerprint = self.public_key.fingerprint
-                formatted_fingerprint = ' '.join([key_fingerprint[i:i+4] for i in range(0, len(key_fingerprint), 4)])
-                key_info = f"Loaded Public Key:\nFingerprint: {formatted_fingerprint}"
-                
-                if hasattr(self, 'key_info'):
-                    self.key_info.setText(key_info)
-                    
-                self.statusBar().showMessage(f"Successfully loaded public key from {file_path}", 3000)
-                
-            except Exception as e2:
-                QMessageBox.warning(
-                    self,
-                    "Error Loading Key",
-                    f"Could not load key from {file_path}: {str(e2)}"
-                )
+            error_msg = f"Could not load key from {file_path}.\n\nError: {str(e)}"
+            logger.error(f"Failed to load key: {error_msg}")
+            QMessageBox.warning(
+                self,
+                "Error Loading Key",
+                error_msg
+            )
+            return False
     
     def encrypt_file(self, file_path):
         """Encrypt a file using the loaded public key."""
@@ -421,31 +442,9 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Decryption Failed",
+                "Error",
                 f"Failed to decrypt file: {str(e)}"
             )
-    
-    def create_pgp_tab(self):
-        """Create the PGP tools tab."""
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-        
-        # Key Generation Group
-        key_group = QGroupBox("PGP Key Generation")
-        key_layout = QVBoxLayout()
-        
-        # Name and Email
-        form_layout = QFormLayout()
-        
-        self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("Your Name")
-        form_layout.addRow("Name:", self.name_edit)
-        
-        self.email_edit = QLineEdit()
-        self.email_edit.setPlaceholderText("your.email@example.com")
-        form_layout.addRow("Email:", self.email_edit)
-        
-        # Key Type Selection
         self.key_type_combo = QComboBox()
         self.key_type_combo.addItem("RSA", "RSA")
         self.key_type_combo.addItem("ECC (EdDSA)", "ECC")
@@ -592,6 +591,125 @@ class MainWindow(QMainWindow):
         layout.addWidget(key_group)
         layout.addWidget(msg_group)
         layout.addStretch()
+        
+        return tab
+        
+    def create_pgp_tab(self):
+        """Create the PGP tools tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        # Key Management Group
+        key_group = QGroupBox("PGP Key Management")
+        key_layout = QVBoxLayout()
+        
+        # Key Generation
+        gen_group = QGroupBox("Key Generation")
+        gen_layout = QFormLayout()
+        
+        # Name and Email
+        self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText("Your Name")
+        gen_layout.addRow("Name:", self.name_edit)
+        
+        self.email_edit = QLineEdit()
+        self.email_edit.setPlaceholderText("your.email@example.com")
+        gen_layout.addRow("Email:", self.email_edit)
+        
+        # Key Type Selection
+        self.key_type_combo = QComboBox()
+        self.key_type_combo.addItem("RSA", "RSA")
+        self.key_type_combo.addItem("ECC (EdDSA)", "ECC")
+        self.key_type_combo.currentIndexChanged.connect(self.update_key_size_options)
+        gen_layout.addRow("Key Type:", self.key_type_combo)
+        
+        # Key Size Selection
+        self.key_size_combo = QComboBox()
+        self.key_size_combo.addItem("2048 bits", 2048)
+        self.key_size_combo.addItem("3072 bits", 3072)
+        self.key_size_combo.addItem("4096 bits", 4096)
+        gen_layout.addRow("Key Size:", self.key_size_combo)
+        
+        # Curve Selection (initially hidden)
+        self.curve_combo = QComboBox()
+        self.curve_combo.addItem("ed25519", "ed25519")
+        self.curve_combo.addItem("ed448", "ed448")
+        self.curve_combo.addItem("nistp256", "nistp256")
+        self.curve_combo.addItem("nistp384", "nistp384")
+        self.curve_combo.addItem("nistp521", "nistp521")
+        gen_layout.addRow("Curve:", self.curve_combo)
+        self.curve_combo.setVisible(False)  # Hidden by default
+        
+        # Key Generation Button
+        self.generate_btn = QPushButton("Generate Key Pair")
+        self.generate_btn.clicked.connect(self.generate_key)
+        gen_layout.addRow(self.generate_btn)
+        
+        gen_group.setLayout(gen_layout)
+        key_layout.addWidget(gen_group)
+        
+        # Key Loading
+        load_group = QGroupBox("Load Existing Keys")
+        load_layout = QVBoxLayout()
+        
+        self.load_btn = QPushButton("Load Key Pair")
+        self.load_btn.clicked.connect(self.load_key)
+        load_layout.addWidget(self.load_btn)
+        
+        self.key_status = QLabel("No key loaded")
+        self.key_status.setWordWrap(True)
+        load_layout.addWidget(self.key_status)
+        
+        load_group.setLayout(load_layout)
+        key_layout.addWidget(load_group)
+        
+        key_group.setLayout(key_layout)
+        
+        # Message Group
+        msg_group = QGroupBox("Message Operations")
+        msg_layout = QVBoxLayout()
+        
+        # Message Input
+        self.message_input = QTextEdit()
+        self.message_input.setPlaceholderText("Enter message to encrypt/decrypt or sign/verify here...")
+        self.message_input.setAcceptDrops(True)
+        
+        # Operation Buttons
+        btn_layout = QHBoxLayout()
+        
+        self.encrypt_btn = QPushButton("Encrypt")
+        self.encrypt_btn.clicked.connect(self.encrypt_message)
+        btn_layout.addWidget(self.encrypt_btn)
+        
+        self.decrypt_btn = QPushButton("Decrypt")
+        self.decrypt_btn.clicked.connect(self.decrypt_message)
+        btn_layout.addWidget(self.decrypt_btn)
+        
+        self.sign_btn = QPushButton("Sign")
+        self.sign_btn.clicked.connect(self.sign_message)
+        btn_layout.addWidget(self.sign_btn)
+        
+        self.verify_btn = QPushButton("Verify")
+        self.verify_btn.clicked.connect(self.verify_message)
+        btn_layout.addWidget(self.verify_btn)
+        
+        # Add widgets to message group
+        msg_layout.addWidget(self.message_input)
+        msg_layout.addLayout(btn_layout)
+        msg_group.setLayout(msg_layout)
+        
+        # Add groups to main layout
+        layout.addWidget(key_group)
+        layout.addWidget(msg_group)
+        layout.addStretch()
+        
+        # Initialize key loaded state
+        self.key_loaded = False
+        self.private_key = None
+        self.public_key = None
+        
+        # Set initial key size options
+        self.update_key_size_options()
         
         return tab
         
@@ -1024,44 +1142,55 @@ class MainWindow(QMainWindow):
     # PGP Methods
     def update_key_size_options(self):
         """Update the key size options based on the selected key type."""
+        if not hasattr(self, 'key_type_combo') or not hasattr(self, 'key_size_combo') or not hasattr(self, 'curve_combo'):
+            return  # UI elements not initialized yet
+            
         key_type = self.key_type_combo.currentData()
         
         # Store current selection if any
-        current_size = self.key_size_combo.currentData()
+        current_size = self.key_size_combo.currentData() if self.key_size_combo.count() > 0 else None
         
         # Clear existing items
+        self.key_size_combo.blockSignals(True)  # Prevent signal emission during updates
         self.key_size_combo.clear()
         
         if key_type == "RSA":
             # Show key size combo, hide curve combo
             self.key_size_combo.setVisible(True)
-            self.curve_combo.setVisible(False)
+            if hasattr(self, 'curve_combo'):
+                self.curve_combo.setVisible(False)
             
             # Add RSA key sizes
-            self.key_size_combo.addItem("2048 bits", 2048)
-            self.key_size_combo.addItem("3072 bits", 3072)
-            self.key_size_combo.addItem("4096 bits", 4096)
+            rsa_sizes = [2048, 3072, 4096]
+            for size in rsa_sizes:
+                self.key_size_combo.addItem(f"{size} bits", size)
             
             # Restore or set default selection
-            if current_size in [2048, 3072, 4096]:
+            if current_size in rsa_sizes:
                 index = self.key_size_combo.findData(current_size)
                 if index >= 0:
                     self.key_size_combo.setCurrentIndex(index)
-            else:
-                self.key_size_combo.setCurrentIndex(0)  # Default to 2048 bits
+            elif self.key_size_combo.count() > 0:
+                self.key_size_combo.setCurrentIndex(0)  # Default to first item
+                
         else:  # ECC
-            # Show curve combo, hide key size combo
+            # Hide key size combo, show curve combo if it exists
             self.key_size_combo.setVisible(False)
-            self.curve_combo.setVisible(True)
-            
-            # Add ECC key sizes (these will be mapped to curves)
-            self.key_size_combo.addItem("ed25519 (256 bits)", 256)
-            self.key_size_combo.addItem("nistp256 (256 bits)", 256)
-            self.key_size_combo.addItem("nistp384 (384 bits)", 384)
-            self.key_size_combo.addItem("nistp521 (521 bits)", 521)
-            
-            # Set default selection
-            self.key_size_combo.setCurrentIndex(0)  # Default to ed25519
+            if hasattr(self, 'curve_combo'):
+                self.curve_combo.setVisible(True)
+                
+                # Ensure curve combo is properly populated
+                if self.curve_combo.count() == 0:
+                    curves = [
+                        ("ed25519 (256 bits)", "ed25519"),
+                        ("nistp256 (256 bits)", "nistp256"),
+                        ("nistp384 (384 bits)", "nistp384"),
+                        ("nistp521 (521 bits)", "nistp521")
+                    ]
+                    for name, curve in curves:
+                        self.curve_combo.addItem(name, curve)
+        
+        self.key_size_combo.blockSignals(False)  # Re-enable signals  # Default to ed25519
     
     def generate_key(self):
         """Generate a new PGP key pair."""
@@ -1299,6 +1428,90 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"{label} copied to clipboard", 3000)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to copy to clipboard: {str(e)}")
+            
+    # TPM Methods
+    def create_tpm_tab(self):
+        """Create the TPM settings tab."""
+        # Create a container widget for the TPM settings
+        tpm_tab = QWidget()
+        layout = QVBoxLayout(tpm_tab)
+        
+        # Add a group box for TPM settings
+        tpm_group = QGroupBox("Trusted Platform Module (TPM) Settings")
+        tpm_layout = QVBoxLayout()
+        
+        # Add a button to open TPM settings dialog
+        tpm_button = QPushButton("Configure TPM Settings...")
+        tpm_button.clicked.connect(self.show_tpm_settings)
+        
+        # Add a label for status
+        self.tpm_status_label = QLabel("TPM Status: Checking...")
+        self.tpm_status_label.setWordWrap(True)
+        
+        # Add widgets to layout
+        tpm_layout.addWidget(tpm_button)
+        tpm_layout.addWidget(self.tpm_status_label)
+        tpm_layout.addStretch()
+        
+        tpm_group.setLayout(tpm_layout)
+        
+        # Add to main layout
+        layout.addWidget(tpm_group)
+        layout.addStretch()
+        
+        # Update initial status
+        self.update_tpm_status()
+        
+        return tpm_tab
+        
+    def update_tpm_status(self):
+        """Update the TPM status label."""
+        try:
+            from core.tpm_utils import check_tpm_requirements, get_tpm_status_message
+            status = check_tpm_requirements()
+            if status.get('tpm_available', False):
+                if status.get('dependencies_met', False):
+                    self.tpm_status_label.setText("TPM Status: Available and Ready")
+                    self.tpm_status_label.setStyleSheet("color: green;")
+                else:
+                    self.tpm_status_label.setText(
+                        "TPM Status: Available (dependencies missing)\n"
+                        "Please install the required TPM libraries."
+                    )
+                    self.tpm_status_label.setStyleSheet("color: orange;")
+            else:
+                self.tpm_status_label.setText(
+                    "TPM Status: Not Available\n"
+                    "TPM is either not present or not enabled in your system BIOS."
+                )
+                self.tpm_status_label.setStyleSheet("color: red;")
+        except ImportError:
+            self.tpm_status_label.setText(
+                "TPM Status: TPM support not installed\n"
+                "The required TPM libraries are not installed."
+            )
+            self.tpm_status_label.setStyleSheet("color: red;")
+        except Exception as e:
+            self.tpm_status_label.setText(f"TPM Status: Error\n{str(e)}")
+            self.tpm_status_label.setStyleSheet("color: red;")
+    
+    def show_tpm_settings(self):
+        """Show the TPM settings dialog."""
+        try:
+            dialog = TpmSettingsDialog(self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.update_tpm_status()
+                QMessageBox.information(
+                    self,
+                    "TPM Settings",
+                    "TPM settings have been updated successfully."
+                )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Failed to open TPM settings: {str(e)}"
+            )
 
 
 if __name__ == "__main__":
@@ -1306,3 +1519,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+

@@ -26,6 +26,119 @@ class TimeStampingError(Exception):
     """Base exception for time-stamping related errors."""
     pass
 
+class TimestampingService:
+    """Service for creating and verifying time-stamps using RFC 3161 TSP."""
+    
+    def __init__(self, tsa_url: str = None, timeout: int = 30):
+        """
+        Initialize the time-stamping service.
+        
+        Args:
+            tsa_url: URL of the Time-Stamp Authority (TSA) server
+            timeout: Request timeout in seconds
+        """
+        self.tsa_url = tsa_url
+        self.timeout = timeout
+        self.session = None
+    
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session:
+            await self.session.close()
+    
+    async def get_timestamp(self, data: bytes, hash_algorithm: str = 'sha256') -> bytes:
+        """
+        Get a time-stamp token for the given data.
+        
+        Args:
+            data: Data to be time-stamped
+            hash_algorithm: Hash algorithm to use (default: 'sha256')
+            
+        Returns:
+            bytes: Time-stamp token in DER format
+            
+        Raises:
+            TimeStampingError: If time-stamping fails
+        """
+        if not self.tsa_url:
+            raise TimeStampingError("No TSA URL configured")
+            
+        try:
+            # Create time-stamp request
+            tsq = TimeStampRequest(hash_algorithm)
+            request_data = tsq.create_request(data)
+            
+            # Send request to TSA
+            headers = {
+                'Content-Type': 'application/timestamp-query',
+                'Content-Transfer-Encoding': 'binary'
+            }
+            
+            async with self.session.post(
+                self.tsa_url,
+                data=request_data,
+                headers=headers,
+                timeout=self.timeout
+            ) as response:
+                if response.status != 200:
+                    raise TimeStampingError(
+                        f"TSA server returned status {response.status}: {await response.text()}"
+                    )
+                
+                timestamp = await response.read()
+                if not timestamp:
+                    raise TimeStampingError("Empty response from TSA server")
+                    
+                return timestamp
+                
+        except asyncio.TimeoutError:
+            raise TimeStampingError("TSA request timed out")
+        except Exception as e:
+            raise TimeStampingError(f"Failed to get time-stamp: {str(e)}")
+    
+    def verify_timestamp(
+        self,
+        data: bytes,
+        timestamp: bytes,
+        cert: x509.Certificate = None,
+        trusted_certs: List[x509.Certificate] = None
+    ) -> datetime:
+        """
+        Verify a time-stamp token.
+        
+        Args:
+            data: Original data that was time-stamped
+            timestamp: Time-stamp token in DER format
+            cert: Optional certificate of the TSA
+            trusted_certs: List of trusted CA certificates
+            
+        Returns:
+            datetime: The verified time-stamp
+            
+        Raises:
+            TimeStampingError: If verification fails
+        """
+        try:
+            # Load the time-stamp token
+            ts = x509.load_der_x509_certificate(timestamp, default_backend())
+            
+            # TODO: Implement full RFC 3161 verification
+            # This is a simplified version that just checks the time
+            
+            # If we have a certificate, verify it
+            if cert and cert.not_valid_after < datetime.now(timezone.utc):
+                raise TimeStampingError("TSA certificate has expired")
+                
+            # Return the notBefore time as the time-stamp
+            return ts.not_valid_before.replace(tzinfo=timezone.utc)
+            
+        except Exception as e:
+            raise TimeStampingError(f"Failed to verify time-stamp: {str(e)}")
+
+
 class TimeStampRequest:
     """Class for creating time-stamp requests."""
     

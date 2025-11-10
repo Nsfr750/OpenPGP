@@ -23,6 +23,7 @@ class TrustModelError(Exception):
     """Base exception for trust model related errors."""
     pass
 
+
 class KeyTrust:
     """Class representing the trust level of a key."""
     
@@ -32,6 +33,365 @@ class KeyTrust:
     MARGINAL = 2
     FULL = 3
     ULTIMATE = 4
+    
+    # Key types and their relative strengths
+    KEY_STRENGTHS = {
+        'rsa': {
+            2048: 1.0,
+            3072: 1.5,
+            4096: 2.0,
+            8192: 2.5
+        },
+        'dsa': {
+            1024: 0.5,
+            2048: 1.0,
+            3072: 1.2
+        },
+        'ed25519': {
+            256: 2.0  # Ed25519 is considered very strong for its key size
+        },
+        'ed448': {
+            456: 2.5  # Ed448 is even stronger
+        },
+        'ecdsa': {
+            256: 1.5,  # secp256r1, secp256k1
+            384: 2.0,  # secp384r1
+            521: 2.5   # secp521r1
+        }
+    }
+    
+    # Hash algorithm strengths
+    HASH_STRENGTHS = {
+        'md5': 0.1,
+        'sha1': 0.5,
+        'sha224': 0.8,
+        'sha256': 1.0,
+        'sha384': 1.5,
+        'sha512': 2.0,
+        'sha3_256': 2.0,
+        'sha3_384': 2.5,
+        'sha3_512': 3.0
+    }
+    
+    @classmethod
+    def get_key_strength(cls, key_type: str, key_size: int) -> float:
+        """
+        Get the relative strength of a key based on its type and size.
+        
+        Args:
+            key_type: Type of the key (rsa, dsa, ecdsa, etc.)
+            key_size: Size of the key in bits
+            
+        Returns:
+            float: Relative strength score (higher is stronger)
+        """
+        key_type = key_type.lower()
+        if key_type in cls.KEY_STRENGTHS:
+            # Find the closest key size
+            sizes = sorted(cls.KEY_STRENGTHS[key_type].items(), key=lambda x: x[0])
+            for size, strength in sizes:
+                if key_size <= size:
+                    return strength
+            # If key size is larger than any in the table, use the highest strength
+            return sizes[-1][1] if sizes else 1.0
+        return 1.0  # Default strength for unknown key types
+    
+    @classmethod
+    def get_hash_strength(cls, hash_algorithm: str) -> float:
+        """
+        Get the relative strength of a hash algorithm.
+        
+        Args:
+            hash_algorithm: Name of the hash algorithm
+            
+        Returns:
+            float: Relative strength score (higher is stronger)
+        """
+        return cls.HASH_STRENGTHS.get(hash_algorithm.lower(), 1.0)
+    
+    @classmethod
+    def get_trust_level(cls, trust_str: str) -> int:
+        """
+        Convert a trust string to a trust level constant.
+        
+        Args:
+            trust_str: Trust string from GnuPG (e.g., 'u', 'f', 'm', 'n')
+            
+        Returns:
+            int: Corresponding trust level constant
+        """
+        trust_map = {
+            'u': cls.ULTIMATE,  # Ultimate trust (user's own key)
+            'f': cls.FULL,      # Full trust
+            'm': cls.MARGINAL,  # Marginal trust
+            'n': cls.NEVER,     # No trust
+            'd': cls.NEVER,     # Don't know (treated as no trust)
+            'r': cls.NEVER      # Revoked (treated as no trust)
+        }
+        return trust_map.get(trust_str.lower(), cls.UNKNOWN)
+    
+    @classmethod
+    def get_trust_string(cls, trust_level: int) -> str:
+        """
+        Convert a trust level constant to a human-readable string.
+        
+        Args:
+            trust_level: Trust level constant
+            
+        Returns:
+            str: Human-readable trust level
+        """
+        trust_strings = {
+            cls.UNKNOWN: "Unknown",
+            cls.NEVER: "Never",
+            cls.MARGINAL: "Marginal",
+            cls.FULL: "Full",
+            cls.ULTIMATE: "Ultimate"
+        }
+        return trust_strings.get(trust_level, "Invalid")
+
+
+class TrustModel:
+    """
+    Trust model for OpenPGP key verification and validation.
+    
+    This class implements a web of trust model for verifying PGP keys based on
+    signatures from other trusted keys.
+    """
+    
+    def __init__(self, gpg_home: Optional[str] = None):
+        """
+        Initialize the trust model.
+        
+        Args:
+            gpg_home: Path to the GnuPG home directory (default: ~/.gnupg)
+        """
+        self.gpg = gnupg.GPG(gnupghome=gpg_home or os.path.expanduser('~/.gnupg'))
+        self.trust_db = {}
+        self.trust_paths = {}
+        self.min_trust_paths = 1
+        self.max_path_length = 5
+        
+    def verify_key_trust(self, key_fingerprint: str, 
+                        required_trust: int = KeyTrust.MARGINAL,
+                        min_certifications: int = 1) -> bool:
+        """
+        Verify if a key meets the required trust level.
+        
+        Args:
+            key_fingerprint: The fingerprint of the key to verify
+            required_trust: Minimum required trust level (default: MARGINAL)
+            min_certifications: Minimum number of certifications required
+            
+        Returns:
+            bool: True if the key meets the trust requirements, False otherwise
+        """
+        if not key_fingerprint:
+            raise TrustModelError("Key fingerprint cannot be empty")
+            
+        # Check if the key exists in the keyring
+        keys = self.gpg.list_keys(keys=key_fingerprint)
+        if not keys:
+            raise TrustModelError(f"Key {key_fingerprint} not found in keyring")
+            
+        key = keys[0]
+        
+        # Check key expiration
+        if key.get('expires') and float(key['expires']) < time.time():
+            return False
+            
+        # Check key revocation
+        if key.get('revoked') or key.get('disabled') or key.get('expired'):
+            return False
+            
+        # Check key trust level
+        key_trust = self.get_key_trust(key_fingerprint)
+        if key_trust < required_trust:
+            return False
+            
+        # Check number of certifications (signatures from other trusted keys)
+        certs = self.get_key_certifications(key_fingerprint)
+        valid_certs = [c for c in certs if self.verify_certification(c)]
+        
+        return len(valid_certs) >= min_certifications
+    
+    def get_key_trust(self, key_fingerprint: str) -> int:
+        """
+        Get the trust level of a key.
+        
+        Args:
+            key_fingerprint: The fingerprint of the key
+            
+        Returns:
+            int: The trust level (UNKNOWN, NEVER, MARGINAL, FULL, ULTIMATE)
+        """
+        # Check if we have a cached trust value
+        if key_fingerprint in self.trust_db:
+            return self.trust_db[key_fingerprint]
+            
+        # Get key information
+        keys = self.gpg.list_keys(keys=key_fingerprint)
+        if not keys:
+            return KeyTrust.UNKNOWN
+            
+        key = keys[0]
+        
+        # Check if the key is ultimately trusted (this key is trusted directly)
+        trust_levels = self.gpg.list_trustdb().get('trust', {})
+        if key_fingerprint in trust_levels and trust_levels[key_fingerprint] == 'u':
+            self.trust_db[key_fingerprint] = KeyTrust.ULTIMATE
+            return KeyTrust.ULTIMATE
+            
+        # Calculate trust based on signatures from other trusted keys
+        certs = self.get_key_certifications(key_fingerprint)
+        trusted_certs = [c for c in certs if self.verify_certification(c)]
+        
+        if not trusted_certs:
+            return KeyTrust.UNKNOWN
+            
+        # Get the maximum trust level from certifying keys
+        max_trust = KeyTrust.UNKNOWN
+        for cert in trusted_certs:
+            signer_trust = self.get_key_trust(cert['signer_fingerprint'])
+            max_trust = max(max_trust, signer_trust)
+            
+        # Cache the result
+        self.trust_db[key_fingerprint] = max_trust
+        return max_trust
+    
+    def get_key_certifications(self, key_fingerprint: str) -> List[Dict[str, Any]]:
+        """
+        Get all certifications (signatures) for a key.
+        
+        Args:
+            key_fingerprint: The fingerprint of the key
+            
+        Returns:
+            List of certification dictionaries
+        """
+        # Use GnuPG to get key signatures
+        keys = self.gpg.list_sigs(keys=key_fingerprint)
+        if not keys:
+            return []
+            
+        key = keys[0]
+        certs = []
+        
+        # Process each user ID's signatures
+        for uid in key.get('uids', []):
+            sigs = key.get('signatures', {}).get(uid, [])
+            for sig in sigs:
+                if sig.get('keyid') and sig.get('fingerprint'):
+                    certs.append({
+                        'key_fingerprint': key_fingerprint,
+                        'signer_fingerprint': sig['fingerprint'],
+                        'signer_keyid': sig['keyid'],
+                        'signature_date': sig.get('date'),
+                        'signature_type': sig.get('sig_class'),
+                        'user_id': uid
+                    })
+                    
+        return certs
+    
+    def verify_certification(self, certification: Dict[str, Any]) -> bool:
+        """
+        Verify a key certification (signature).
+        
+        Args:
+            certification: The certification to verify
+            
+        Returns:
+            bool: True if the certification is valid, False otherwise
+        """
+        try:
+            # Check if the signing key is trusted
+            signer_trust = self.get_key_trust(certification['signer_fingerprint'])
+            if signer_trust < KeyTrust.MARGINAL:
+                return False
+                
+            # Check if the signature is valid
+            # Note: This is a simplified check - in a real implementation,
+            # you would verify the actual cryptographic signature
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error verifying certification: {e}")
+            return False
+    
+    def find_trust_paths(self, source_fingerprint: str, target_fingerprint: str, 
+                        max_depth: int = 5, current_path: Optional[List[str]] = None) -> List[List[str]]:
+        """
+        Find all trust paths between two keys.
+        
+        Args:
+            source_fingerprint: The source key fingerprint
+            target_fingerprint: The target key fingerprint
+            max_depth: Maximum depth to search (default: 5)
+            current_path: Current path being explored (used internally for recursion)
+            
+        Returns:
+            List of trust paths (each path is a list of key fingerprints)
+        """
+        if current_path is None:
+            current_path = []
+            
+        # Add the current key to the path
+        current_path = current_path + [source_fingerprint]
+        
+        # Check if we've found the target
+        if source_fingerprint == target_fingerprint:
+            return [current_path]
+            
+        # Check if we've reached the maximum depth
+        if len(current_path) > max_depth:
+            return []
+            
+        # Get all keys that have signed the current key
+        certs = self.get_key_certifications(source_fingerprint)
+        trusted_signers = [c['signer_fingerprint'] for c in certs 
+                         if self.verify_certification(c)]
+        
+        # Recursively find paths from each signer to the target
+        paths = []
+        for signer in trusted_signers:
+            if signer not in current_path:  # Avoid cycles
+                new_paths = self.find_trust_paths(
+                    signer, target_fingerprint, max_depth, current_path.copy()
+                )
+                paths.extend(new_paths)
+                
+        return paths
+    
+    def calculate_trust_score(self, key_fingerprint: str) -> float:
+        """
+        Calculate a trust score for a key (0.0 to 1.0).
+        
+        Args:
+            key_fingerprint: The fingerprint of the key
+            
+        Returns:
+            float: Trust score between 0.0 (untrusted) and 1.0 (fully trusted)
+        """
+        trust_level = self.get_key_trust(key_fingerprint)
+        
+        # Map trust levels to scores
+        trust_scores = {
+            KeyTrust.UNKNOWN: 0.0,
+            KeyTrust.NEVER: 0.0,
+            KeyTrust.MARGINAL: 0.5,
+            KeyTrust.FULL: 0.8,
+            KeyTrust.ULTIMATE: 1.0
+        }
+        
+        base_score = trust_scores.get(trust_level, 0.0)
+        
+        # Adjust score based on number of certifications
+        certs = self.get_key_certifications(key_fingerprint)
+        valid_certs = len([c for c in certs if self.verify_certification(c)])
+        cert_bonus = min(0.2, valid_certs * 0.05)  # Up to 0.2 bonus for multiple certs
+        
+        return min(1.0, base_score + cert_bonus)
+
     
     # Key types and their relative strengths
     KEY_STRENGTHS = {

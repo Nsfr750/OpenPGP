@@ -22,8 +22,60 @@ from cryptography.hazmat.primitives.serialization import (
 )
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.exceptions import InvalidSignature, InvalidKey
+from enum import Enum, auto
+from dataclasses import dataclass
+from typing import Optional, Union, Dict, Any
 
 logger = logging.getLogger(__name__)
+
+class EncryptionAlgorithm(Enum):
+    """Supported encryption algorithms."""
+    AES256_GCM = auto()
+    CHACHA20_POLY1305 = auto()
+    AES256_CBC = auto()
+
+class HashAlgorithm(Enum):
+    """Supported hash algorithms."""
+    SHA256 = auto()
+    SHA384 = auto()
+    SHA512 = auto()
+    BLAKE2B = auto()
+    BLAKE2S = auto()
+    SHA3_256 = auto()
+    SHA3_512 = auto()
+
+@dataclass
+class EncryptedData:
+    """Container for encrypted data and its metadata."""
+    ciphertext: bytes
+    iv: Optional[bytes] = None
+    tag: Optional[bytes] = None
+    algorithm: Optional[str] = None
+    key_id: Optional[str] = None
+    additional_data: Optional[Dict[str, Any]] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the encrypted data to a dictionary."""
+        return {
+            'ciphertext': self.ciphertext,
+            'iv': self.iv,
+            'tag': self.tag,
+            'algorithm': self.algorithm,
+            'key_id': self.key_id,
+            'additional_data': self.additional_data or {}
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'EncryptedData':
+        """Create an EncryptedData instance from a dictionary."""
+        return cls(
+            ciphertext=data['ciphertext'],
+            iv=data.get('iv'),
+            tag=data.get('tag'),
+            algorithm=data.get('algorithm'),
+            key_id=data.get('key_id'),
+            additional_data=data.get('additional_data', {})
+        )
 
 class CryptoError(Exception):
     """Base exception for cryptographic operations."""

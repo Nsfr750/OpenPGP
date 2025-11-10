@@ -6,7 +6,12 @@ key server interactions, and hardware token management.
 """
 import os
 import json
+import logging
 from pathlib import Path
+from typing import Optional
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
@@ -322,14 +327,36 @@ class KeyManagementTab(QWidget):
             "PGP Keys (*.asc *.gpg *.pgp);;All Files (*)"
         )
         
-        if file_path:
-            try:
-                # TODO: Implement key import using keyring_manager
-                # self.keyring_manager.import_key(file_path)
+        if not file_path:
+            return
+            
+        try:
+            # Read the key file
+            with open(file_path, 'rb') as f:
+                key_data = f.read()
+            
+            # Try to determine key type from file extension
+            key_type = 'public'
+            if file_path.lower().endswith(('.gpg', '.pgp')):
+                # Could be either, but we'll try public first
+                key_type = 'public'
+            
+            # Import the key
+            if self.keyring_manager.add_key(key_data, key_type=key_type):
                 self.refresh_key_list()
                 QMessageBox.information(self, "Success", "Key imported successfully")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to import key: {str(e)}")
+            else:
+                QMessageBox.warning(self, "Warning", "Failed to import key: Unknown error")
+                
+        except Exception as e:
+            logger.error(f"Failed to import key: {e}")
+            QMessageBox.critical(
+                self, 
+                "Error", 
+                f"Failed to import key: {str(e)}\n\n"
+                f"Make sure the file contains a valid PGP key and you have "
+                f"permission to access it."
+            )
     
     def export_key(self):
         """Export the selected key to a file."""
@@ -394,17 +421,60 @@ class KeyManagementTab(QWidget):
         if not self.keyring_manager:
             return
             
-        # TODO: Get keys from keyring_manager
-        # keys = self.keyring_manager.list_keys()
-        # for key in keys:
-        #     item = QTreeWidgetItem([
-        #         key['key_id'],
-        #         key['type'],
-        #         key['user_id'],
-        #         key['created'],
-        #         key['expires']
-        #     ])
-        #     self.key_list.addTopLevelItem(item)
+        try:
+            # Get all keys from the keyring manager
+            keys = self.keyring_manager.list_keys()
+            
+            for key in keys:
+                # Format the key information
+                key_id = key.get('fingerprint', '')[-8:]  # Use last 8 chars of fingerprint as key ID
+                key_type = key.get('type', 'unknown').capitalize()
+                
+                # Get the first user ID or 'No user ID'
+                user_ids = key.get('uids', [])
+                user_id = user_ids[0] if user_ids else 'No user ID'
+                
+                # Format dates
+                created = self._format_timestamp(key.get('created'))
+                expires = self._format_timestamp(key.get('expires')) or 'Never'
+                
+                # Create the tree item
+                item = QTreeWidgetItem([
+                    key_id,
+                    key_type,
+                    user_id,
+                    created,
+                    expires
+                ])
+                
+                # Store the full fingerprint as data
+                item.setData(0, Qt.UserRole, key.get('fingerprint'))
+                
+                # Add to the list
+                self.key_list.addTopLevelItem(item)
+                
+            # Resize columns to fit content
+            for i in range(self.key_list.columnCount()):
+                self.key_list.resizeColumnToContents(i)
+                
+        except Exception as e:
+            logger.error(f"Failed to refresh key list: {e}")
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"Failed to load keys: {str(e)}"
+            )
+    
+    def _format_timestamp(self, timestamp: Optional[float]) -> str:
+        """Format a timestamp as a human-readable string."""
+        if not timestamp:
+            return ""
+            
+        try:
+            from datetime import datetime
+            return datetime.fromtimestamp(float(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+        except (ValueError, TypeError):
+            return str(timestamp)
     
     # Key server tab methods
     def search_keys(self):
