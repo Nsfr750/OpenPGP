@@ -1,83 +1,114 @@
-# OpenPGP - Development Roadmap
+# OpenPGP - Development Roadmap (2025-2026)
 
-This document outlines the development roadmap for the OpenPGP application, including completed features and future plans.
+This document outlines the development roadmap for the OpenPGP application, including completed features and future plans as of November 2025.
 
-## Version 2.1.0 (Current)
+## Version 2.2.0 (Q4 2025) - Current Release
 
-### Key Features
-- **Blockchain Identity**
-  - Blockchain-based identity verification
-  - Secure key sharing with fine-grained permissions
-  - Identity verification requests
+### New Features
 
-- **Enhanced Security**
-  - End-to-end encryption for files and messages
-  - Secure file sharing with access control
-  - Hardware token support (YubiKey and compatible devices)
-  - Multiple encryption algorithm support
+- **Enhanced TPM 2.0 Integration**
+  - Full Windows TPM 2.0 support
+  - Secure key storage in hardware
+  - Remote attestation capabilities
 
-- **Modern UI/UX**
-  - Redesigned interface with dark/light theme support
-  - Drag and drop functionality
-  - Improved keyboard navigation
-  - Comprehensive help system
+- **Quantum-Resistant Cryptography**
+  - Post-quantum algorithm support (Kyber, Dilithium)
+  - Hybrid encryption modes
+  - Algorithm migration tools
 
-## Version 2.2.0 (Q1 2024)
+- **Decentralized Identity**
+  - DID (Decentralized Identifiers) integration
+  - Verifiable Credentials support
+  - Cross-platform identity management
 
-### Planned Features
-- **Key Server Integration**
-  - PGP key server support
-  - Automatic key discovery and verification
-  - Key synchronization across devices
+### Improvements
 
-- **Advanced Security**
-  - Smart card and TPM support
-  - Hardware Security Module (HSM) integration
-  - Enhanced key protection mechanisms
+- Performance optimizations for large file encryption
+- Enhanced key synchronization across devices
+- Improved hardware token support (YubiKey 5, Nitrokey 3)
 
-- **Collaboration**
-  - Secure group messaging
-  - Shared key management
-  - Team access controls
-
-## Version 2.3.0 (Q2 2024)
-
-### Planned Features
-- **Advanced File Management**
-  - Encrypted file systems support
-  - Secure file shredding
-  - File versioning and history
-
-- **Enterprise Features**
-  - Centralized key management
-  - Compliance and audit logging
-  - Role-based access control
-  - Integration with enterprise identity providers
-
-## Version 3.0.0 (H2 2024)
+## Version 2.3.0 (Q1 2026)
 
 ### Major Updates
-- **New Architecture**
-  - Plugin system for extensibility
-  - Public API for third-party integrations
-  - Headless mode for server operations
-  - Microservices architecture for scalability
 
-- **Cross-Platform**
-  - Native builds for all major platforms
-  - Mobile applications (iOS/Android)
-  - Browser extension for web integration
-  - Command-line interface (CLI) version
+- **Unified Cross-Platform Experience**
+  - Complete UI/UX overhaul with Flutter-based interface
+  - Native performance on all platforms
+  - Seamless sync between desktop and mobile
+
+- **Advanced Collaboration**
+  - End-to-end encrypted team workspaces
+  - Secure real-time document collaboration
+  - Granular permission controls
+
+- **Enterprise Suite**
+  - Centralized administration console
+  - Advanced audit logging and compliance reporting
+  - SCIM 2.0 provisioning
+  - SIEM integration
+
+## Version 2.4.0 (Q2 2026)
+
+### Planned Features
+
+- **AI-Powered Security**
+  - Anomaly detection in key usage
+  - Smart key rotation policies
+  - Automated security recommendations
+
+- **Expanded Protocol Support**
+  - MLS (Message Layer Security) protocol
+  - Secure multi-party computation
+  - Zero-knowledge proof integration
+
+- **Developer Platform**
+  - Plugin SDK and marketplace
+  - WebAssembly runtime for extensions
+  - Comprehensive API documentation
+
+## Version 2.5.0 (Q3 2026)
+
+### Future Vision
+
+- **Decentralized Infrastructure**
+  - Blockchain-based key management
+  - Distributed storage for encrypted data
+  - Smart contract-based access control
+
+- **Privacy-Preserving Features**
+  - Private set intersection
+  - Homomorphic encryption support
+  - Secure multi-party computation
+
+- **Global Compliance**
+  - Automated compliance with GDPR, CCPA, and other regulations
+  - Data sovereignty controls
+  - Cross-border data transfer management
+
+## Release Strategy
+
+### Versioning
+
+- **Feature Releases**: Quarterly updates (Q1, Q2, Q3, Q4)
+- **Patch Releases**: Monthly security and bug fix updates
+- **LTS Releases**: Annual major versions with 3 years of security updates
+
+### Support Policy
+
+- **Active Development**: Current and next minor version
+- **Security Support**: All versions released in the last 12 months
+- **Extended Support**: Available for enterprise customers
 
 ## Contributing
 
 We welcome contributions from the community! If you'd like to contribute to the development of OpenPGP, please see our [Contributing Guidelines](CONTRIBUTING.md).
 
-## Release Schedule
+### How to Get Involved
 
-- **Stable Releases**: Quarterly feature releases (Q1, Q2, Q3, Q4)
-- **Patch Releases**: As needed for critical bug fixes and security updates
-- **LTS Version**: Annual major release with extended support
+1. **Code Contributions**: Check our [good first issues](https://github.com/Nsfr750/OpenPGP/contribute)
+2. **Documentation**: Help improve our docs and tutorials
+3. **Testing**: Join our beta testing program
+4. **Translation**: Help localize OpenPGP to your language
 
 ## Feature Requests
 
@@ -90,6 +121,3 @@ Found a bug or security vulnerability? Please report it by [creating an issue](h
 ## Feedback
 
 Your feedback is valuable! Please open an issue on GitHub to suggest new features or report bugs.
-
----
-*Last updated: November 2025*
