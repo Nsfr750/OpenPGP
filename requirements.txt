@@ -45,10 +45,6 @@ pytest-cov>=4.1.0  # For testing
 pytest-mock>=3.12.0  # For testing
 pytest-timeout>=2.2.0  # For testing
 
-# Documentation
-sphinx>=7.2.0  # For documentation
-sphinx-rtd-theme>=2.0.0  # For documentation
-
 # Build & Distribution
 setuptools>=69.0.0  # For building
 wheel>=0.42.0  # For building
