@@ -168,4 +168,4 @@ class SCIMClient:
         await self.close()
 
 # Create a singleton instance
-siem_client = SCIMClient("http://localhost:8000/scim/v2")
+scim_client = SCIMClient("http://localhost:8000/scim/v2")

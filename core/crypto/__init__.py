@@ -1,11 +1,13 @@
 """
 Cryptography Module
 
-This module provides cryptographic functionality including homomorphic encryption.
+This module provides cryptographic functionality including homomorphic encryption
+and privacy-preserving computations.
 """
 
 # Import homomorphic encryption
 from .homomorphic import HomomorphicEncryption, HEMetadata
+from .privacy_preserving import PrivacyPreservingComputations
 
 # Create a default HE context for the application
 # This can be overridden by importing and using HomomorphicEncryption directly
@@ -42,6 +44,7 @@ init_homomorphic_encryption()
 __all__ = [
     'HomomorphicEncryption',
     'HEMetadata',
+    'PrivacyPreservingComputations',
     'he_context',
     'init_homomorphic_encryption',
     'get_he_context'

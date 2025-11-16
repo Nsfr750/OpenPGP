@@ -48,6 +48,16 @@ class SCIMValidationError(SCIMError):
             **kwargs
         )
 
+class SCIMBadRequestError(SCIMError):
+    """Raised when the request is malformed or invalid."""
+    def __init__(self, detail: str = "Bad request", scim_type: Optional[str] = None, **kwargs: Any):
+        super().__init__(
+            detail=detail,
+            status=400,
+            scim_type=scim_type,
+            **kwargs
+        )
+
 class SCIMNotFoundError(SCIMError):
     """Raised when a requested resource is not found."""
     def __init__(self, detail: str = "Resource not found", **kwargs: Any):

@@ -141,6 +141,43 @@ class Schema(BaseModel):
     description: Optional[str] = None
     attributes: List[Dict[str, Any]]
 
+class ServiceProviderConfig(BaseModel):
+    """SCIM 2.0 Service Provider Configuration."""
+    schemas: List[str] = ["urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"]
+    documentation_uri: Optional[str] = Field(None, alias="documentationUri")
+    patch: Dict[str, bool] = Field(default_factory=lambda: {"supported": True})
+    bulk: Dict[str, Any] = Field(default_factory=lambda: {
+        "supported": False,
+        "maxOperations": 1000,
+        "maxPayloadSize": 1048576
+    })
+    filter: Dict[str, Any] = Field(default_factory=lambda: {
+        "supported": True,
+        "maxResults": 200
+    })
+    change_password: Dict[str, bool] = Field(
+        default_factory=lambda: {"supported": False}, 
+        alias="changePassword"
+    )
+    sort: Dict[str, bool] = Field(
+        default_factory=lambda: {"supported": False}
+    )
+    etag: Dict[str, bool] = Field(
+        default_factory=lambda: {"supported": False}
+    )
+    authentication_schemes: List[Dict[str, str]] = Field(
+        default_factory=lambda: [
+            {
+                "type": "oauth2",
+                "name": "OAuth 2.0",
+                "description": "OAuth 2.0 authentication",
+                "specUri": "https://tools.ietf.org/html/rfc6749",
+                "documentationUri": "https://oauth.net/2/"
+            }
+        ],
+        alias="authenticationSchemes"
+    )
+
 class ListResponse(BaseModel):
     """SCIM 2.0 List Response."""
     schemas: List[str] = ["urn:ietf:params:scim:api:messages:2.0:ListResponse"]

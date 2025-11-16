@@ -6,5 +6,6 @@ This package contains the main application logic and utilities.
 from .openpgp import *
 from .imghdr_shim import *
 from .sitecustomize import *
+from .logger import *
 
-__all__ = ['openpgp', 'imghdr_shim', 'sitecustomize']
+__all__ = ['openpgp', 'imghdr_shim', 'sitecustomize', 'logger']

@@ -169,3 +169,6 @@ async def bulk_operations(
 ):
     """Process bulk operations."""
     return await server.bulk_operations(operations)
+
+# Export the router
+scim_router = router

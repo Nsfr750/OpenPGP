@@ -27,6 +27,7 @@ from core.compliance import GDPRCompliance, CCPACompliance
 from core.storage.compliance_storage import ComplianceStorage  # You'll need to implement this
 from core.api.endpoints import compliance as compliance_endpoints
 from core.storage import ComplianceStorage
+from core.api.endpoints import data_sovereignty
 
 # Set up logging
 LOG_FILE = 'logs/application.log'
@@ -94,6 +95,7 @@ compliance_endpoints.storage = compliance_storage
 
 app.include_router(privacy_endpoints.router)
 app.include_router(compliance_endpoints.router)
+app.include_router(data_sovereignty.router)
 
 # CORS middleware
 app.add_middleware(
@@ -156,6 +158,8 @@ async def server_error_exception_handler(request: Request, exc: HTTPException):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "An internal server error occurred."},
     )
+
+app.state.data_sovereignty = data_sovereignty.sovereignty_manager
 
 if __name__ == "__main__":
     import uvicorn
