@@ -1,6 +1,6 @@
 # Features
 
-- Modern UI with ttkbootstrap (Superhero theme)
+## Core Functionality
 - Generate, load, and export OpenPGP key pairs
 - Set key name, email, passphrase, and view fingerprint
 - Encrypt and decrypt messages
@@ -9,11 +9,28 @@
 - Visualize key fingerprint for security checks
 - Generate SSL certificates with custom CN
 - Clear/reset all fields with one click
-- **Centralized logging system** (info, warning, error, uncaught exceptions)
-- **Log Viewer with real-time filtering** (ALL, INFO, WARNING, ERROR)
-- Use `log_info`, `log_warning`, `log_error` for custom log entries
-- Automatic traceback capture and display in log viewer
-- Dynamic menu bar with About, Help, Log Viewer, Sponsor, Version dialogs
+
+## Logging & Diagnostics (v2.1.0+)
+- **Enhanced Log Viewer** with file selection and advanced filtering
+- Support for viewing multiple log files from the logs directory
+- Real-time log level filtering (ALL, DEBUG, INFO, WARNING, ERROR, OTHER)
+- Text search with highlighting within log files
+- Keyboard shortcuts for common actions (F1-F4)
+- Centralized logging system with custom log levels
+- Automatic traceback capture and display
+- Log file management and rotation
+
+## User Interface
+- Modern dark theme with consistent styling
+- Responsive layout that works on different screen sizes
+- Intuitive menu system with keyboard shortcuts
+- Status bar with file information
+- Tooltips and contextual help
+- Dynamic menu bar with About, Help, Log Viewer, and Sponsor dialogs
+
+## Technical Features
+- Built with PySide6 for modern, native-looking UI
 - Semantic versioning and version info
-- Modular structure (`struttura`, `gui`, etc.)
-- Easy extensibility and theming (via ttkbootstrap)
+- Modular and maintainable code structure
+- Comprehensive error handling and user feedback
+- Easy extensibility and theming

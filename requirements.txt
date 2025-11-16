@@ -1,20 +1,65 @@
-# Core dependencies
-PySide6>=6.9.1
-PySide6-Addons>=6.9.1
-PySide6-Essentials>=6.9.1
-shiboken6>=6.9.1
-pgpy>=0.5.3
-cryptography>=42.0.0
-pyperclip>=1.9.0
+# Core Dependencies
+PySide6>=6.9.1  # For GUI
+PySide6-Addons>=6.9.1  # For GUI
+PySide6-Essentials>=6.9.1  # For GUI
+shiboken6>=6.9.1  # For GUI
+dnspython>=2.5.0  # For DNS resolution
+msgpack>=1.0.5  # For secure passphrase handling
 
-# Development dependencies
-black>=24.3.0
-pytest>=8.1.0
-pytest-qt>=4.2.0
+# FastAPI Dependencies
+fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.5
+httpx>=0.19.0
+python-dotenv>=0.19.0
+pydantic-settings>=2.0.0
+aiohttp>=3.8.0
+email-validator>=2.0.0
 
-# For image processing
-wand>=0.6.11
+# Make tpm2-pytss optional
+tpm2-pytss>=2.3.0; platform_system != 'Windows'  # Optional TPM support
+wmi>=1.5.1  # For Windows TPM support
+pywin32>=311  # For Windows TPM support
 
-# For testing
-pytest-cov>=4.1.0
-pytest-mock>=3.12.0
+# Cryptography
+pgpy>=0.5.3  # For secure passphrase handling
+cryptography>=42.0.0  # For secure passphrase handling
+pyOpenSSL>=24.0.0  # For secure passphrase handling
+python-gnupg>=0.5.1  # For hardware token support
+pycryptodome>=3.20.0  # For secure passphrase handling
+argon2-cffi>=23.1.0  # For secure passphrase hashing
+gnupg>=2.3.1  # For hardware token support
+qrcode[pil]>=8.2  # For QR code based recovery
+pyotp>=2.9.0  # For TOTP based recovery
+pyqrcode>=1.2.1  # For generating recovery QR codes
+
+# System Utilities
+psutil>=7.1.3  # For system monitoring
+pyperclip>=1.9.0  # For clipboard access
+
+# Image Processing (Optional)
+wand>=0.6.11  # Requires ImageMagick installation
+qrcode>=8.2  # For QR code based recovery
+Pillow>=10.0.0  # Required by qrcode
+
+# Development Dependencies
+black>=24.3.0  # For code formatting
+flake8>=7.0.0  # For code quality
+isort>=5.13.0  # For code formatting
+mypy>=1.9.0  # For type checking
+
+# Testing
+pytest>=8.1.0  # For testing
+pytest-qt>=4.2.0  # For testing
+pytest-cov>=4.1.0  # For testing
+pytest-mock>=3.12.0  # For testing
+pytest-timeout>=2.2.0  # For testing
+
+# Build & Distribution
+setuptools>=69.0.0  # For building
+wheel>=0.42.0  # For building
+twine>=5.0.0  # For building
+Nuitka>=0.1.0  # For building
+pyinstaller>=5.12.0  # For building

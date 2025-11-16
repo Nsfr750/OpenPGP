@@ -1,59 +1,163 @@
-# Add imghdr shim for Python 3.9+ compatibility
+import os
 import sys
+import traceback
 import builtins
 if 'imghdr' not in sys.modules:
-    from imghdr_shim import imghdr
+    from core.imghdr_shim import imghdr
     sys.modules['imghdr'] = imghdr
     builtins.imghdr = imghdr
 
-import traceback
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from gui.main_window import MainWindow
+from utils.logger import log_error, log_info, log_warning, log_exception, set_log_file
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
+from typing import Optional
+import logging
+from pathlib import Path
+from core.siem.middleware import SIEMRequestMiddleware
+from core.scim.server import SCIMServer
+from core.scim.router import scim_router
 
-# Global exception hook to log all uncaught exceptions
-LOG_FILE = 'traceback.log'
+# Set up logging
+LOG_FILE = 'logs/application.log'
+set_log_file(LOG_FILE)
 
-def log_info(msg):
-    print(f'[INFO] {msg}')
-    try:
-        with open(LOG_FILE, 'a', encoding='utf-8') as f:
-            f.write(f'[INFO] {msg}\n')
-    except Exception as e:
-        print(f'Failed to write to log file: {e}')
+app = FastAPI()
 
-def log_warning(msg):
-    print(f'[WARNING] {msg}')
-    try:
-        with open(LOG_FILE, 'a', encoding='utf-8') as f:
-            f.write(f'[WARNING] {msg}\n')
-    except Exception as e:
-        print(f'Failed to write to log file: {e}')
+# Include SCIM router
+app.include_router(scim_router)
 
-def log_error(msg):
-    print(f'[ERROR] {msg}')
-    try:
-        with open(LOG_FILE, 'a', encoding='utf-8') as f:
-            f.write(f'[ERROR] {msg}\n')
-    except Exception as e:
-        print(f'Failed to write to log file: {e}')
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Add SIEM middleware
+app.add_middleware(SIEMRequestMiddleware)
+
+# Initialize SCIM server and store it in the app state
+scim_server = SCIMServer(
+    app=app,
+    base_url=os.getenv("SCIM_BASE_URL", "/scim/v2"),
+    auth_method=os.getenv("AUTH_METHOD", "api_key")  # or "oauth2"
+)
+app.state.scim_server = scim_server
+
+# Import SCIM server
+from core.scim.server import SCIMServer
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="OpenPGP SCIM Server",
+    description="SCIM 2.0 compliant server for user and group management",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configuration
+class Settings:
+    SCIM_BASE_URL = os.getenv("SCIM_BASE_URL", "/scim/v2")
+    AUTH_METHOD = os.getenv("AUTH_METHOD", "api_key")  # or "oauth2"
+    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+
+settings = Settings()
+
+# Initialize SCIM server
+scim_server = SCIMServer(
+    app=app,
+    base_url=settings.SCIM_BASE_URL,
+    auth_method=settings.AUTH_METHOD
+)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "scim_enabled": True,
+        "auth_method": settings.AUTH_METHOD
+    }
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "name": "OpenPGP SCIM Server",
+        "version": "1.0.0",
+        "documentation": "/docs",
+        "scim_endpoint": settings.SCIM_BASE_URL
+    }
+
+# Error handlers
+@app.exception_handler(404)
+async def not_found_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "The requested resource was not found."},
+    )
+
+@app.exception_handler(500)
+async def server_error_exception_handler(request: Request, exc: HTTPException):
+    logger.error(f"Server error: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An internal server error occurred."},
+    )
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    # Start the server
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=int(os.getenv("PORT", 8000)),
+        reload=settings.DEBUG,
+        log_level="info" if not settings.DEBUG else "debug"
+    )
+    
 def global_exception_hook(exc_type, exc_value, exc_tb):
-    # Save last traceback for LogViewer
-    sys.last_type = exc_type
-    sys.last_value = exc_value
-    sys.last_traceback = exc_tb
-    
-    # Write to log file
-    try:
-        with open(LOG_FILE, 'a', encoding='utf-8') as f:
-            f.write('\n--- Uncaught Exception ---\n')
-            traceback.print_exception(exc_type, exc_value, exc_tb, file=f)
-    except Exception as e:
-        print(f'Failed to write exception to log file: {e}')
-    
-    # Call default hook (prints to stderr)
-    sys.__excepthook__(exc_type, exc_value, exc_tb)
+    """Global exception handler that logs uncaught exceptions."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        # Call the default excepthook for keyboard interrupts
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
+
+    # Log the exception
+    log_exception(exc_value)
 
 # Set the exception hook
 sys.excepthook = global_exception_hook
@@ -62,13 +166,17 @@ def main():
     # Create the Qt Application
     app = QApplication(sys.argv)
     
+    # Set application icon
+    app_icon = QIcon("assets/icon.png")
+    app.setWindowIcon(app_icon)
+    
     # Apply Fusion style for a modern look
     app.setStyle('Fusion')
     
     # Set application information
     app.setApplicationName("OpenPGP")
-    app.setApplicationVersion("1.0.0")
-    app.setOrganizationName("OpenPGP")
+    app.setApplicationVersion("2.2.0")
+    app.setOrganizationName("Tuxxle")
     
     # Create and show the main window
     try:

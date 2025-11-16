@@ -1,125 +1,249 @@
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QLabel, QPushButton, 
+                             QHBoxLayout, QTextBrowser, QApplication, QWidget,
+                             QGridLayout, QSizePolicy)
+from PySide6.QtCore import Qt, QUrl, QSize, QBuffer, QTimer
+from PySide6.QtGui import QPixmap, QDesktopServices, QImage, QIcon
 import webbrowser
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-    QPushButton, QWidget, QApplication
-)
-from PySide6.QtGui import QPixmap, QIcon, QFont
-from PySide6.QtCore import Qt, QSize, QUrl
+import os
+import io
+import logging
 
-class SponsorWindow(QDialog):
-    """A dialog window for showing sponsorship options."""
-    
+# Try to import qrcode for QR code generation
+try:
+    import qrcode
+    HAS_QRCODE = True
+except ImportError:
+    qrcode = None
+    HAS_QRCODE = False
+    logging.debug("qrcode not available - QR code generation will be disabled")
+
+try:
+    from wand.image import Image as WandImage
+    from wand.drawing import Drawing
+    from wand.color import Color
+    HAS_WAND = True
+except ImportError:
+    WandImage = None
+    Drawing = None
+    Color = None
+    HAS_WAND = False
+    logging.debug("wand not available - QR code generation will be disabled")
+
+logger = logging.getLogger(__name__)
+
+class SponsorDialog(QDialog):
     def __init__(self, parent=None):
-        """Initialize the Sponsor window."""
         super().__init__(parent)
-        self.setWindowTitle("Support & Sponsor OpenPGP GUI")
-        self.setMinimumSize(520, 220)
-        self.resize(640, 320)
-        self.setWindowModality(Qt.ApplicationModal)
+        self.setWindowTitle("Support Development")
+        self.setMinimumSize(500, 400)
         
-        self.setup_ui()
-    
-    def setup_ui(self):
-        """Set up the user interface components."""
-        main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(10)
-        main_layout.setContentsMargins(20, 15, 20, 15)
+        layout = QVBoxLayout(self)
         
         # Title
-        title = QLabel("❤️ Support the Project! ❤️")
-        title_font = QFont()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #3DAEE9;")
+        title = QLabel("Support OpenPGP")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 20px;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
         
-        # Subtitle
-        subtitle = QLabel("Your support helps us improve OpenPGP GUI!")
-        subtitle_font = QFont()
-        subtitle_font.setPointSize(11)
-        subtitle.setFont(subtitle_font)
-        subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet("color: #7F8C8D;")
+        # Message
+        message = QLabel(
+            "If you find this application useful, please consider supporting its development.\n\n"
+            "Your support helps cover hosting costs and encourages further development."
+        )
+        message.setWordWrap(True)
+        message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(message)
         
-        # Sponsor buttons
-        btn_container = QWidget()
-        btn_layout = QVBoxLayout(btn_container)
-        btn_layout.setSpacing(10)
-        btn_layout.setContentsMargins(0, 0, 0, 0)
+        # Create a grid layout for donation methods
+        grid = QGridLayout()
         
-        # Define buttons with their respective URLs and styles
-        buttons = [
-            ("🐙 Sponsor on GitHub", "https://github.com/sponsors/Nsfr750", "#2ecc71"),
-            ("💰 Donate on Paypal", "https://paypal.me/3dmega", "#f39c12")
-        ]
+        # GitHub Sponsors
+        github_label = QLabel('<a href="https://github.com/sponsors/Nsfr750">GitHub Sponsors</a>')
+        github_label.setOpenExternalLinks(True)
+        github_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        for text, url, color in buttons:
-            btn = QPushButton(text)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {color};
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                    min-width: 200px;
-                }}
-                QPushButton:hover {{
-                    background-color: {'#27ae60' if color == '#2ecc71' else 
-                                     '#2980b9' if color == '#3498db' else
-                                     '#e67e22' if color == '#f39c12' else
-                                     '#8e44ad'};
-                }}
-                QPushButton:pressed {{
-                    background-color: {'#219653' if color == '#2ecc71' else 
-                                     '#2471a3' if color == '#3498db' else
-                                     '#d35400' if color == '#f39c12' else
-                                     '#7d3c98'};
-                }}
-            """)
-            btn.clicked.connect(lambda checked, u=url: self.open_url(u))
-            btn_layout.addWidget(btn, 0, Qt.AlignCenter)
+        # PayPal
+        paypal_label = QLabel('<a href="https://paypal.me/3dmega">PayPal Donation</a>')
+        paypal_label.setOpenExternalLinks(True)
+        paypal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Monero
+        monero_address = "47Jc6MC47WJVFhiQFYwHyBNQP5BEsjUPG6tc8R37FwcTY8K5Y3LvFzveSXoGiaDQSxDrnCUBJ5WBj6Fgmsfix8VPD4w3gXF"
+        monero_label = QLabel("Monero:")
+        monero_xmr= "XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR"
+        monero_address_label = QLabel(monero_xmr)
+        monero_address_label.setStyleSheet("""
+            QLabel {
+                font-family: monospace;
+                background-color: #f0f0f0;
+                color: #000;
+                padding: 5px;
+                border-radius: 3px;
+                border: 1px solid #ddd;
+            }
+        """)
+        
+        # Generate QR Code (only if dependencies are available)
+        if HAS_QRCODE and HAS_WAND and WandImage and Drawing and Color:
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(f'monero:{monero_address}')
+            qr.make(fit=True)
+            
+            # Draw QR code with Wand (avoid PIL)
+            matrix = qr.get_matrix()
+            box_size = 10
+            border = 4
+            width = (len(matrix[0]) + border * 2) * box_size
+            height = (len(matrix) + border * 2) * box_size
+
+            with WandImage(width=width, height=height, background=Color('white')) as img:
+                with Drawing() as draw:
+                    draw.fill_color = Color('black')
+                    # Draw black squares where matrix cell is True
+                    for r, row in enumerate(matrix):
+                        for c, cell in enumerate(row):
+                            if cell:
+                                x0 = (c + border) * box_size
+                                y0 = (r + border) * box_size
+                                x1 = x0 + box_size - 1
+                                y1 = y0 + box_size - 1
+                                draw.rectangle(left=x0, top=y0, right=x1, bottom=y1)
+                    draw(img)
+                img.format = 'png'
+                buffer = io.BytesIO()
+                img.save(file=buffer)
+                data = buffer.getvalue()
+
+            # Load into QPixmap
+            pixmap = QPixmap()
+            pixmap.loadFromData(data, "PNG")
+            
+            # Scale the pixmap to a reasonable size
+            pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            
+            # Create a label to display the QR code
+            qr_label = QLabel()
+            qr_label.setPixmap(pixmap)
+            qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            qr_label.setToolTip("Scan to donate XMR")
+            
+            # Add widgets to grid
+            grid.addWidget(QLabel("<h3>Ways to Support:</h3>"), 0, 0, 1, 2)
+            grid.addWidget(github_label, 1, 0, 1, 2)
+            grid.addWidget(paypal_label, 2, 0, 1, 2)
+            grid.addWidget(monero_label, 3, 0, 1, 2)
+            grid.addWidget(monero_address_label, 4, 0, 1, 2)
+            grid.addWidget(qr_label, 1, 2, 4, 1)  # Span 4 rows
+        else:
+            # QR code not available, adjust layout
+            grid.addWidget(QLabel("<h3>Ways to Support:</h3>"), 0, 0, 1, 2)
+            grid.addWidget(github_label, 1, 0, 1, 2)
+            grid.addWidget(paypal_label, 2, 0, 1, 2)
+            grid.addWidget(monero_label, 3, 0, 1, 2)
+            grid.addWidget(monero_address_label, 4, 0, 1, 2)
+            
+            # Add a placeholder for QR code
+            qr_placeholder = QLabel("QR Code not available\n(requires qrcode and wand libraries)")
+            qr_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            qr_placeholder.setStyleSheet("color: #666; font-size: 12px; padding: 20px;")
+            grid.addWidget(qr_placeholder, 1, 2, 4, 1)  # Span 4 rows
+        
+        # Add some spacing
+        grid.setSpacing(10)
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+        
+        # Add grid to layout
+        layout.addLayout(grid)
+        
+        # Other ways to help
+        other_help = QTextBrowser()
+        other_help.setOpenExternalLinks(True)
+        other_help.setHtml("""
+        <h3>Other Ways to Help:</h3>
+        <ul>
+            <li>Star the project on <a href="https://github.com/Nsfr750/OpenPGP">GitHub</a></li>
+            <li>Report bugs and suggest features</li>
+            <li>Share with others who might find it useful</li>
+        </ul>
+        """)
+        other_help.setMaximumHeight(150)
+        layout.addWidget(other_help)
+        
+        # Button layout
+        button_layout = QHBoxLayout()
         
         # Close button
         close_btn = QPushButton("Close")
-        close_btn.setStyleSheet("""
+        close_btn.clicked.connect(self.accept)
+        
+        # Donate button
+        donate_btn = QPushButton("Donate with PayPal")
+        donate_btn.setStyleSheet("""
             QPushButton {
-                background-color: #7F8C8D;
+                background-color: #0079C1;
                 color: white;
-                border: none;
                 padding: 8px 16px;
+                border: none;
                 border-radius: 4px;
-                min-width: 100px;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #6C7A80;
-            }
-            QPushButton:pressed {
-                background-color: #5D6D7E;
+                background-color: #0062A3;
             }
         """)
-        close_btn.clicked.connect(self.close)
+        donate_btn.clicked.connect(self.open_paypal_link)
         
-        # Add widgets to main layout
-        main_layout.addWidget(title)
-        main_layout.addWidget(subtitle)
-        main_layout.addStretch(1)
-        main_layout.addWidget(btn_container, 1)
-        main_layout.addStretch(1)
-        main_layout.addWidget(close_btn, 0, Qt.AlignCenter)
+        # Copy Monero address button
+        self.copy_monero_btn = QPushButton("Copy Monero Address")
+        self.copy_monero_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #F26822;
+                color: white;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+                margin-right: 10px;
+            }
+            QPushButton:hover {
+                background-color: #D45B1D;
+            }
+        """)
+        self.copy_monero_btn.clicked.connect(lambda: self.copy_to_clipboard(monero_address))
         
-        # Center the window
-        self.center_window()
+        button_layout.addWidget(close_btn)
+        button_layout.addStretch()
+        button_layout.addWidget(self.copy_monero_btn)
+        button_layout.addWidget(donate_btn)
+        
+        layout.addLayout(button_layout)
     
-    def open_url(self, url):
-        """Open the specified URL in the default web browser."""
-        webbrowser.open(url)
+    def open_donation_link(self):
+        """Open donation link in default web browser."""
+        QDesktopServices.openUrl(QUrl("https://github.com/sponsors/Nsfr750"))
     
-    def center_window(self):
-        """Center the window on the screen."""
-        frame = self.frameGeometry()
-        center_point = QApplication.primaryScreen().availableGeometry().center()
-        frame.moveCenter(center_point)
-        self.move(frame.topLeft())
+    def open_paypal_link(self):
+        """Open PayPal link in default web browser."""
+        QDesktopServices.openUrl(QUrl("https://paypal.me/3dmega"))
+    
+    def copy_to_clipboard(self, text):
+        """Copy text to clipboard and show a tooltip."""
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        
+        # Change button text temporarily
+        original_text = self.copy_monero_btn.text()
+        self.copy_monero_btn.setText("Copied!")
+        
+        # Reset button text after 2 seconds
+        QTimer.singleShot(2000, self.reset_monero_button)
+    
+    def reset_monero_button(self):
+        """Reset the Monero button text and style."""
+        self.copy_monero_btn.setText("Copy Monero Address")

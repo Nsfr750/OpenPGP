@@ -88,3 +88,7 @@ Traceback.log
 *.tmp
 build_simple.bat
 openpgp.spec
+clean_pycache.py
+clear_cache.py
+TXT
+firma.bat
