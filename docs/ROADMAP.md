@@ -6,6 +6,18 @@ This document outlines the development roadmap for the OpenPGP application, incl
 
 ### New Features
 
+- **SIEM Integration**
+  - [x] SIEM client implementation
+  - [x] API key authentication
+  - [x] Real-time security event monitoring
+  - [x] Secure event logging
+
+- **SCIM 2.0 Server**
+  - [x] Full SCIM 2.0 protocol support
+  - [x] User and group provisioning
+  - [x] OAuth2 and API key authentication
+  - [x] Service provider configuration
+
 - **Enhanced TPM 2.0 Integration**
   - [x] Basic Windows TPM 2.0 detection
   - **Full Windows TPM 2.0 Support**
@@ -84,19 +96,37 @@ This document outlines the development roadmap for the OpenPGP application, incl
   - Granular permission controls
 
 - **Enterprise Suite**
-  - Centralized administration console
-  - Advanced audit logging and compliance reporting
-  - SCIM 2.0 provisioning
-  - SIEM integration
+  - [x] Centralized administration console
+  - [x] Advanced audit logging and compliance reporting
+  - [x] SCIM 2.0 provisioning
+  - [x] SIEM integration
 
-## Version 2.4.0 (Q2 2026)
+- **Advanced SIEM Features**
+  - [ ] Custom event schemas
+  - [ ] Advanced query builder
+  - [ ] Automated response actions
+  - [ ] Compliance reporting
 
-### Planned Features
+- **Enhanced SCIM Server**
+  - [ ] Bulk operations
+  - [ ] Custom schema extensions
+  - [ ] Advanced filtering
+  - [ ] Webhook notifications
+
+- **Improved Security**
+  - [ ] Hardware Security Module (HSM) support
+  - [ ] FIDO2/WebAuthn integration
+  - [ ] Enhanced key rotation
+  - [ ] Advanced audit logging
 
 - **AI-Powered Security**
   - Anomaly detection in key usage
   - Smart key rotation policies
   - Automated security recommendations
+
+## Version 2.4.0 (Q2 2026)
+
+### Planned Features
 
 - **Expanded Protocol Support**
   - MLS (Message Layer Security) protocol

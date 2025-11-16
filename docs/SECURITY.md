@@ -2,10 +2,25 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.1.x   | :white_check_mark: |
-| < 2.1   | :x:                |
+| Version | Supported          | Security Updates Until |
+| ------- | ------------------ | ---------------------- |
+| 2.2.x   | :white_check_mark: | November 2026          |
+| 2.1.x   | :white_check_mark: | May 2026               |
+| < 2.1   | :x:                | -                      |
+
+## New in Version 2.2.0
+
+### SIEM Integration
+- Real-time security event monitoring
+- Centralized security logging
+- API key authentication
+- Secure event forwarding
+
+### SCIM 2.0 Server
+- Secure user provisioning
+- OAuth2 and API key authentication
+- Role-based access control
+- Audit logging for all provisioning events
 
 ## Reporting a Vulnerability
 

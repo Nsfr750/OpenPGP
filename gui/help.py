@@ -102,20 +102,32 @@ class HelpDialog(QDialog):
         
         # Welcome message
         welcome_text = """
-        <h2>Welcome to OpenPGP v2.1.0</h2>
+        <h2>Welcome to OpenPGP v2.2.0</h2>
         <p>Thank you for using OpenPGP, a secure and easy-to-use application for PGP encryption, 
         decryption, and key management with advanced security features.</p>
         
-        <h3>What's New in 2.1.0</h3>
+        <h3>What's New in 2.2.0</h3>
+        <h4>🔌 SIEM Integration</h4>
         <ul>
-            <li><b>Security Tab</b>: New dedicated tab for security-related features</li>
-            <li><b>Hardware Security</b>: Comprehensive support for HSM and smart cards</li>
-            <li><b>Secure File Operations</b>: Encrypt/decrypt files with advanced options</li>
-            <li><b>Secure Messaging</b>: End-to-end encrypted messaging interface</li>
-            <li><b>Secure File Sharing</b>: Share files with access control and expiration</li>
-            <li><b>Trust Model</b>: Visualize and manage key trust relationships</li>
-            <li><b>Key Management</b>: Enhanced key generation and management</li>
-            <li><b>Dark Theme</b>: Improved dark theme with better contrast</li>
+            <li><b>Real-time Monitoring</b>: Connect to Security Information and Event Management systems</li>
+            <li><b>Centralized Logging</b>: Send security events to your SIEM for analysis</li>
+            <li><b>Secure Authentication</b>: API key and OAuth2 support for SIEM connections</li>
+            <li><b>Event Forwarding</b>: Forward security events in real-time</li>
+        </ul>
+        
+        <h4>🔄 SCIM 2.0 Server</h4>
+        <ul>
+            <li><b>User Provisioning</b>: Automate user and group management</li>
+            <li><b>Standard Compliance</b>: Full SCIM 2.0 protocol implementation</li>
+            <li><b>Secure Authentication</b>: OAuth2 and API key support</li>
+            <li><b>Audit Logging</b>: Track all provisioning events</li>
+        </ul>
+        
+        <h4>🔒 Enhanced Security</h4>
+        <ul>
+            <li><b>Improved TPM 2.0 Support</b>: Better hardware security module integration</li>
+            <li><b>Key Management</b>: Enhanced key rotation and lifecycle management</li>
+            <li><b>Audit Logging</b>: Comprehensive security event tracking</li>
         </ul>
         
         <h3>Getting Started</h3>
@@ -290,13 +302,28 @@ class HelpDialog(QDialog):
         layout = QVBoxLayout(widget)
         
         text = """
-        <h2>Security Features in OpenPGP 2.1.0</h2>
+        <h2>Security Features in OpenPGP 2.2.0</h2>
         
-        <h3>Hardware Security Module (HSM) Support</h3>
-        <p>OpenPGP includes comprehensive support for Hardware Security Modules (HSM) and smart cards, 
-        allowing you to securely store your private keys in dedicated hardware.</p>
+        <h3>🔌 SIEM Integration</h3>
+        <p>Monitor and analyze security events in real-time with Security Information and Event Management integration.</p>
+        <ul>
+            <li><b>Real-time Monitoring</b>: Connect to SIEM solutions like Splunk, ELK, or Graylog</li>
+            <li><b>Security Event Logging</b>: Track all security-relevant operations</li>
+            <li><b>API Integration</b>: Secure API key and OAuth2 authentication</li>
+            <li><b>Custom Alerts</b>: Configure alerts for suspicious activities</li>
+        </ul>
         
-        <h4>Features:</h4>
+        <h3>🔄 SCIM 2.0 Server</h3>
+        <p>Automated user and group management with System for Cross-domain Identity Management.</p>
+        <ul>
+            <li><b>User Provisioning</b>: Automate user lifecycle management</li>
+            <li><b>Group Management</b>: Synchronize group memberships</li>
+            <li><b>Standard Protocol</b>: Full SCIM 2.0 compliance</li>
+            <li><b>Secure Authentication</b>: OAuth2 and API key support</li>
+        </ul>
+        
+        <h3>🔒 Hardware Security Module (HSM) Support</h3>
+        <p>Enterprise-grade key protection with hardware security modules.</p>
         <ul>
             <li>Support for YubiKey and other PKCS#11 compatible devices</li>
             <li>Secure key generation directly on the hardware token</li>
@@ -347,6 +374,9 @@ class HelpDialog(QDialog):
             <li>Verify the identity of the people you communicate with</li>
             <li>Use strong, unique passphrases for your keys</li>
             <li>Regularly back up your keys and important data</li>
+            <li>Enable SIEM integration for centralized security monitoring</li>
+            <li>Use SCIM for automated user and group management</li>
+            <li>Review audit logs regularly for suspicious activities</li>
         </ul>
         """
         

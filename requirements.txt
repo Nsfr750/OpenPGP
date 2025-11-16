@@ -23,6 +23,14 @@ tpm2-pytss>=2.3.0; platform_system != 'Windows'  # Optional TPM support
 wmi>=1.5.1  # For Windows TPM support
 pywin32>=311  # For Windows TPM support
 
+# SCIM and SIEM Dependencies
+scim2-filter-parser>=0.4.1  # For SCIM 2.0 filter parsing
+scim2-tester>=0.3.0  # For SCIM 2.0 testing
+scim2-cli>=0.1.0  # For SCIM 2.0 command line tools
+scim2-filter-grammar>=0.1.0  # For SCIM 2.0 filter grammar
+scim2-models>=0.1.0  # For SCIM 2.0 data models
+scim2-schema-validator>=0.1.0  # For SCIM 2.0 schema validation
+
 # Cryptography
 pgpy>=0.5.3  # For secure passphrase handling
 cryptography>=42.0.0  # For secure passphrase handling

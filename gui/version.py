@@ -3,7 +3,7 @@ Version information for OpenPGP.
 """
 
 # Version as a tuple (major, minor, patch)
-VERSION = (2, 1, 0)
+VERSION = (2, 2, 0)
 
 # String version
 __version__ = ".".join(map(str, VERSION))
@@ -19,7 +19,7 @@ __license__ = "GPL-3.0"
 
 # Build information
 __build__ = ""
-__date__ = "2025-11-10"
+__date__ = "2025-11-17"
 
 # Version description
 __description__ = "A modern PySide6-based graphical user interface for OpenPGP with enhanced encryption, key management, and security features."
@@ -41,6 +41,25 @@ version_info = tuple(map(int, __version__.split('.')))
 
 # Changelog
 __changelog__ = """
+## [2.2.0] - 2025-11-17
+### Added
+- SIEM Integration for real-time security monitoring
+- SCIM 2.0 Server for automated user and group management
+- Enhanced TPM 2.0 support for hardware-backed security
+- API key and OAuth2 authentication for secure access
+- Comprehensive audit logging for all security events
+- Automated security alerts and notifications
+- Support for custom security policies
+- Improved key rotation and lifecycle management
+
+### Improved
+- Enhanced security with hardware-backed operations
+- Better error handling and recovery for SCIM and SIEM
+- Improved performance for large-scale deployments
+- More detailed audit logs and security events
+- Enhanced documentation for enterprise features
+- Better integration with existing security infrastructure
+
 ## [2.1.0] - 2025-11-10
 ### Added
 - Support for ECC and Ed25519 key generation
@@ -89,6 +108,22 @@ def get_version_info():
 def get_version_history():
     """Return the version history."""
     return [
+        {
+            "version": "2.2.0",
+            "date": "2025-11-17",
+            "changes": [
+                "Added SIEM Integration for real-time security monitoring",
+                "Implemented SCIM 2.0 Server for automated user management",
+                "Enhanced TPM 2.0 support for hardware-backed security",
+                "Added API key and OAuth2 authentication",
+                "Implemented comprehensive audit logging",
+                "Added automated security alerts and notifications",
+                "Improved key rotation and lifecycle management",
+                "Enhanced security with hardware-backed operations",
+                "Better error handling for SCIM and SIEM",
+                "Improved performance for large-scale deployments"
+            ]
+        },
         {
             "version": "2.1.0",
             "date": "2025-11-10",

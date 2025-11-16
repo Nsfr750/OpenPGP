@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.2.0] - 2025-11-17
+
+### 🚀 New Features
+
+#### 🔌 SIEM Integration
+- Added SIEM client for security event monitoring
+- Implemented secure connection to SIEM servers
+- Added support for API key authentication
+- Real-time security event logging
+
+#### 🔄 SCIM 2.0 Server
+- Implemented SCIM 2.0 protocol support
+- Added user and group provisioning
+- Support for OAuth2 and API key authentication
+- Built-in service provider configuration
+
+#### 🛠️ System Management
+- Added server management interface
+- Improved error handling and logging
+- Enhanced security controls
+
+### 🐛 Bug Fixes
+- Fixed keyring initialization issues
+- Resolved TPM detection warnings
+- Improved error messages and user feedback
+
 ## [2.1.0] - 2025-11-10
 
 ### 🚀 New Features

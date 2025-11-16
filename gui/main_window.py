@@ -321,9 +321,37 @@ class MainWindow(QMainWindow):
                 if not ok:  # User cancelled
                     return
                     
-                self.siem_client = SIEMClient(base_url=base_url, api_key=api_key if api_key else None)
+                # Import the global SIEM client
+                from core.siem.client import init_siem_client, siem_client
+                init_siem_client(base_url=base_url, api_key=api_key if api_key else None)
+                self.siem_client = siem_client
                 
-            self.siem_client.connect()
+            # Test the connection
+            import asyncio
+            from core.siem.client import siem_client
+            
+            async def test_connection():
+                try:
+                    # Try to make a simple request to test the connection
+                    async with siem_client.client:
+                        response = await siem_client.client.get(
+                            f"{siem_client.base_url}/api/v1/health",
+                            headers=siem_client._get_headers()
+                        )
+                        response.raise_for_status()
+                        return True
+                except Exception as e:
+                    return False
+                    
+            # Run the async test in the event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            connection_ok = loop.run_until_complete(test_connection())
+            loop.close()
+            
+            if not connection_ok:
+                raise Exception("Failed to connect to SIEM server")
+                
             self.siem_connected = True
             self.update_server_ui()
             self.statusBar().showMessage("Connected to SIEM", 3000)
@@ -340,13 +368,24 @@ class MainWindow(QMainWindow):
         """Disconnect from SIEM."""
         try:
             if self.siem_client:
-                self.siem_client.disconnect()
+                # Close the HTTP client
+                import asyncio
+                
+                async def close_client():
+                    await self.siem_client.client.aclose()
+                    
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(close_client())
+                loop.close()
+                
             self.siem_connected = False
+            self.siem_client = None
             self.update_server_ui()
             self.statusBar().showMessage("Disconnected from SIEM", 3000)
             logging.info("Disconnected from SIEM")
         except Exception as e:
-            error_msg = f"Failed to disconnect from SIEM: {str(e)}"
+            error_msg = f"Error disconnecting from SIEM: {str(e)}"
             QMessageBox.critical(self, "Error", error_msg)
             logging.error(error_msg, exc_info=True)
 

@@ -1,8 +1,22 @@
 # OpenPGP GUI App
 
-**Version:** 2.1.0 (Stable)  
+**Version:** 2.2.0 (Stable)  
 **Author:** Nsfr750  
 **License:** GNU General Public License v3.0 (GPLv3). See [LICENSE](LICENSE) for details.
+
+## 🆕 What's New in 2.2.0
+
+### 🔌 SIEM Integration
+- Connect to Security Information and Event Management (SIEM) systems
+- Real-time security event monitoring
+- API key authentication support
+- Secure event logging and analysis
+
+### 🔄 SCIM 2.0 Server
+- Full SCIM 2.0 protocol implementation
+- User and group provisioning
+- OAuth2 and API key authentication
+- Built-in service provider configuration
 
 ## 🚀 Key Features
 
