@@ -28,6 +28,10 @@ pgpy>=0.5.3  # For secure passphrase handling
 cryptography>=42.0.0  # For secure passphrase handling
 pyOpenSSL>=24.0.0  # For secure passphrase handling
 python-gnupg>=0.5.1  # For hardware token support
+
+# Homomorphic Encryption
+tenseal>=0.3.0  # For homomorphic encryption support
+numpy>=1.21.0  # Required by TenSEAL
 pycryptodome>=3.20.0  # For secure passphrase handling
 argon2-cffi>=23.1.0  # For secure passphrase hashing
 gnupg>=2.3.1  # For hardware token support

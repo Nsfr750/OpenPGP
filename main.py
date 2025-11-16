@@ -21,6 +21,12 @@ from pathlib import Path
 from core.siem.middleware import SIEMRequestMiddleware
 from core.scim.server import SCIMServer
 from core.scim.router import scim_router
+from core.api.endpoints import privacy as privacy_endpoints
+from core.api.endpoints import compliance as compliance_endpoints
+from core.compliance import GDPRCompliance, CCPACompliance
+from core.storage.compliance_storage import ComplianceStorage  # You'll need to implement this
+from core.api.endpoints import compliance as compliance_endpoints
+from core.storage import ComplianceStorage
 
 # Set up logging
 LOG_FILE = 'logs/application.log'
@@ -74,6 +80,20 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
+
+# Initialize compliance storage
+compliance_storage = ComplianceStorage(storage_path="data/compliance")
+gdpr_compliance = GDPRCompliance(storage_backend=compliance_storage)
+ccpa_compliance = CCPACompliance(storage_backend=compliance_storage)
+
+# Make compliance handlers available to the endpoints
+from core.api.endpoints import compliance as compliance_endpoints
+compliance_endpoints.gdpr = gdpr_compliance
+compliance_endpoints.ccpa = ccpa_compliance
+compliance_endpoints.storage = compliance_storage
+
+app.include_router(privacy_endpoints.router)
+app.include_router(compliance_endpoints.router)
 
 # CORS middleware
 app.add_middleware(
