@@ -13,6 +13,11 @@ class MenuSignals(QObject):
     backup_key = Signal()
     recover_key = Signal()
     quit_app = Signal()
+    # Server management signals
+    start_scim = Signal()
+    stop_scim = Signal()
+    connect_siem = Signal()
+    disconnect_siem = Signal()
 
 class MenuBar(QMenuBar):
     def __init__(self, parent=None):
@@ -60,6 +65,33 @@ class MenuBar(QMenuBar):
         view_log_action.triggered.connect(self.show_log_viewer)
         view_log_action.setShortcut(QKeySequence("F5"))
         log_menu.addAction(view_log_action)
+        
+        # Server menu
+        server_menu = self.addMenu("&Server")
+        
+        # SCIM Server actions
+        self.scim_menu = server_menu.addMenu("SCIM Server")
+        
+        self.start_scim_action = QAction("Start SCIM Server", self)
+        self.start_scim_action.triggered.connect(self.signals.start_scim.emit)
+        self.scim_menu.addAction(self.start_scim_action)
+        
+        self.stop_scim_action = QAction("Stop SCIM Server", self)
+        self.stop_scim_action.triggered.connect(self.signals.stop_scim.emit)
+        self.stop_scim_action.setEnabled(False)  # Initially disabled
+        self.scim_menu.addAction(self.stop_scim_action)
+        
+        # SIEM Connection actions
+        self.siem_menu = server_menu.addMenu("SIEM Connection")
+        
+        self.connect_siem_action = QAction("Connect to SIEM", self)
+        self.connect_siem_action.triggered.connect(self.signals.connect_siem.emit)
+        self.siem_menu.addAction(self.connect_siem_action)
+        
+        self.disconnect_siem_action = QAction("Disconnect from SIEM", self)
+        self.disconnect_siem_action.triggered.connect(self.signals.disconnect_siem.emit)
+        self.disconnect_siem_action.setEnabled(False)  # Initially disabled
+        self.siem_menu.addAction(self.disconnect_siem_action)
         
         # Help menu
         help_menu = self.addMenu("❓ &Help")

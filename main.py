@@ -11,10 +11,11 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from gui.main_window import MainWindow
-from utils.logger import log_error, log_info, log_warning, log_exception, set_log_file
+from core.logger import log_error, log_info, log_warning, log_exception
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
+from fastapi.responses import JSONResponse
 from typing import Optional
 import logging
 from pathlib import Path
@@ -29,9 +30,8 @@ from core.api.endpoints import compliance as compliance_endpoints
 from core.storage import ComplianceStorage
 from core.api.endpoints import data_sovereignty
 
-# Set up logging
-LOG_FILE = 'logs/application.log'
-set_log_file(LOG_FILE)
+# Ensure logs directory exists
+os.makedirs('logs', exist_ok=True)
 
 app = FastAPI()
 
@@ -153,7 +153,7 @@ async def not_found_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(500)
 async def server_error_exception_handler(request: Request, exc: HTTPException):
-    logger.error(f"Server error: {str(exc)}", exc_info=True)
+    log_error(f"Server error: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "An internal server error occurred."},

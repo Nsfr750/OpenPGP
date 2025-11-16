@@ -29,6 +29,9 @@ from core.openpgp import (
     encrypt_message, decrypt_message, sign_message, 
     verify_signature, generate_ssl_cert
 )
+from core.scim.server import SCIMServer
+from core.siem.client import SIEMClient
+import logging
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -47,6 +50,12 @@ class MainWindow(QMainWindow):
         self.private_key = None
         self.public_key = None
         self.key_loaded = False
+        
+        # Server management
+        self.scim_server = None
+        self.scim_running = False
+        self.siem_client = None
+        self.siem_connected = False
         
         # Track the last active tab for drag and drop
         self.last_active_tab_index = 0
@@ -104,6 +113,12 @@ class MainWindow(QMainWindow):
         self.menu_bar.signals.backup_key.connect(self.backup_key)
         self.menu_bar.signals.recover_key.connect(self.recover_key)
         self.menu_bar.signals.quit_app.connect(self.close)
+        
+        # Connect server management signals
+        self.menu_bar.signals.start_scim.connect(self.start_scim_server)
+        self.menu_bar.signals.stop_scim.connect(self.stop_scim_server)
+        self.menu_bar.signals.connect_siem.connect(self.connect_siem)
+        self.menu_bar.signals.disconnect_siem.connect(self.disconnect_siem)
         
     def export_public_key(self):
         """Export the public key to a file."""
@@ -218,11 +233,162 @@ class MainWindow(QMainWindow):
         self.restoreGeometry(self.settings.value("geometry", self.saveGeometry()))
         self.restoreState(self.settings.value("windowState", self.saveState()))
         
+    def start_scim_server(self):
+        """Start the SCIM server."""
+        try:
+            if not self.scim_server:
+                from fastapi import FastAPI
+                from uvicorn import Config, Server
+                import asyncio
+                
+                # Create FastAPI app
+                app = FastAPI(title="OpenPGP SCIM Server")
+                base_url = "/scim/v2"  # Standard SCIM 2.0 base URL
+                
+                # Initialize SCIM server
+                self.scim_server = SCIMServer(app=app, base_url=base_url)
+                
+                # Store the server instance
+                self.scim_uvicorn_config = Config(
+                    app=app,
+                    host="127.0.0.1",
+                    port=8000,
+                    log_level="info"
+                )
+                self.scim_server_instance = Server(self.scim_uvicorn_config)
+                
+                # Start the server in a separate thread
+                import threading
+                self.scim_server_thread = threading.Thread(
+                    target=lambda: asyncio.run(self.scim_server_instance.serve()),
+                    daemon=True
+                )
+                self.scim_server_thread.start()
+                
+            self.scim_running = True
+            self.update_server_ui()
+            self.statusBar().showMessage("SCIM server started on http://127.0.0.1:8000", 3000)
+            logging.info("SCIM server started successfully")
+            
+        except Exception as e:
+            self.scim_running = False
+            error_msg = f"Failed to start SCIM server: {str(e)}"
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(error_msg, exc_info=True)
+            self.update_server_ui()
+
+    def stop_scim_server(self):
+        """Stop the SCIM server."""
+        try:
+            if hasattr(self, 'scim_server_instance') and self.scim_server_instance:
+                self.scim_server_instance.should_exit = True
+                if hasattr(self, 'scim_server_thread') and self.scim_server_thread.is_alive():
+                    self.scim_server_thread.join(timeout=5)
+                    
+            self.scim_running = False
+            self.update_server_ui()
+            self.statusBar().showMessage("SCIM server stopped", 3000)
+            logging.info("SCIM server stopped")
+        except Exception as e:
+            error_msg = f"Failed to stop SCIM server: {str(e)}"
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(error_msg, exc_info=True)
+
+    def connect_siem(self):
+        """Connect to SIEM."""
+        try:
+            if not self.siem_client:
+                # Get SIEM configuration from user
+                from PySide6.QtWidgets import QInputDialog, QLineEdit
+                base_url, ok = QInputDialog.getText(
+                    self,
+                    "Connect to SIEM",
+                    "Enter SIEM server URL:",
+                    QLineEdit.EchoMode.Normal,
+                    "https://"
+                )
+                
+                if not ok or not base_url:
+                    return
+                    
+                api_key, ok = QInputDialog.getText(
+                    self,
+                    "SIEM Authentication",
+                    "Enter API Key (leave empty if not required):",
+                    QLineEdit.EchoMode.Password
+                )
+                
+                if not ok:  # User cancelled
+                    return
+                    
+                self.siem_client = SIEMClient(base_url=base_url, api_key=api_key if api_key else None)
+                
+            self.siem_client.connect()
+            self.siem_connected = True
+            self.update_server_ui()
+            self.statusBar().showMessage("Connected to SIEM", 3000)
+            logging.info("Successfully connected to SIEM")
+            
+        except Exception as e:
+            self.siem_connected = False
+            error_msg = f"Failed to connect to SIEM: {str(e)}"
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(error_msg, exc_info=True)
+            self.update_server_ui()
+
+    def disconnect_siem(self):
+        """Disconnect from SIEM."""
+        try:
+            if self.siem_client:
+                self.siem_client.disconnect()
+            self.siem_connected = False
+            self.update_server_ui()
+            self.statusBar().showMessage("Disconnected from SIEM", 3000)
+            logging.info("Disconnected from SIEM")
+        except Exception as e:
+            error_msg = f"Failed to disconnect from SIEM: {str(e)}"
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(error_msg, exc_info=True)
+
+    def update_server_ui(self):
+        """Update the UI based on server and SIEM connection states."""
+        if hasattr(self, 'menu_bar'):
+            # Update SCIM server menu items
+            self.menu_bar.start_scim_action.setEnabled(not self.scim_running)
+            self.menu_bar.stop_scim_action.setEnabled(self.scim_running)
+            
+            # Update SIEM connection menu items
+            self.menu_bar.connect_siem_action.setEnabled(not self.siem_connected)
+            self.menu_bar.disconnect_siem_action.setEnabled(self.siem_connected)
+            
+            # Update status bar
+            scim_status = "Running" if self.scim_running else "Stopped"
+            siem_status = "Connected" if self.siem_connected else "Disconnected"
+            self.statusBar().showMessage(f"SCIM: {scim_status} | SIEM: {siem_status}")
+
     def closeEvent(self, event):
         """Handle window close event."""
-        # Save settings
-        self.settings.setValue("geometry", self.saveGeometry())
-        self.settings.setValue("windowState", self.saveState())
+        try:
+            # Stop SCIM server if running
+            if hasattr(self, 'scim_running') and self.scim_running:
+                self.stop_scim_server()
+                
+            # Disconnect from SIEM if connected
+            if hasattr(self, 'siem_connected') and self.siem_connected:
+                self.disconnect_siem()
+                
+            # Save window state and geometry
+            self.settings.setValue("windowState", self.saveState())
+            self.settings.setValue("geometry", self.saveGeometry())
+            
+            # Save splitter state if it exists
+            if hasattr(self, 'splitter') and self.splitter:
+                self.settings.setValue("splitterState", self.splitter.saveState())
+                
+        except Exception as e:
+            logging.error(f"Error during application shutdown: {str(e)}", exc_info=True)
+            
+        # Proceed with normal close
         event.accept()
         
     def on_tab_changed(self, index):
