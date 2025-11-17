@@ -92,3 +92,6 @@ clean_pycache.py
 clear_cache.py
 TXT
 firma.bat
+.windsurf/rules
+setup/comp.py
+setup/__init__.py
