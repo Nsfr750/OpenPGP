@@ -49,7 +49,9 @@ setup(
         "python-gnupg>=0.5.1",
         "pycryptodome>=3.20.0",
         "argon2-cffi>=23.1.0",
-        
+        "liboqs-python>=0.8.0",    # For post-quantum cryptography
+        "pqcrypto>=0.3.4,<1.0.0",  # Updated version constraint
+
         # QR Code and OTP
         "qrcode>=8.2",
         "pyotp>=2.9.0",
@@ -73,6 +75,11 @@ setup(
             "flake8>=6.1.0",
             "isort>=5.12.0",
             "pre-commit>=3.3.3",
+        ],
+        "postquantum": [
+            "liboqs-python>=0.8.0",
+            "pqcrypto>=0.3.4,<1.0.0",  # Updated version constraint
+            "cryptography>=42.0.0",    # Ensure compatibility with post-quantum algorithms
         ],
     },
     entry_points={
