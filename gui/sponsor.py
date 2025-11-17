@@ -1,8 +1,10 @@
+# gui/sponsor.py
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QLabel, QPushButton, 
-                             QHBoxLayout, QTextBrowser, QApplication, QWidget,
-                             QGridLayout, QSizePolicy)
+                           QHBoxLayout, QTextBrowser, QApplication, QWidget,
+                           QGridLayout, QSizePolicy)
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtCore import Qt, QUrl, QSize, QBuffer, QTimer
-from PySide6.QtGui import QPixmap, QDesktopServices, QImage, QIcon
+from PySide6.QtGui import QPixmap, QImage, QIcon
 import webbrowser
 import os
 import io
@@ -32,9 +34,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class SponsorDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, language_manager=None):
         super().__init__(parent)
-        self.setWindowTitle("Support Development")
+        self.setWindowTitle("Supporta lo Sviluppo")
         self.setMinimumSize(500, 400)
         
         layout = QVBoxLayout(self)
@@ -46,10 +48,7 @@ class SponsorDialog(QDialog):
         layout.addWidget(title)
         
         # Message
-        message = QLabel(
-            "If you find this application useful, please consider supporting its development.\n\n"
-            "Your support helps cover hosting costs and encourages further development."
-        )
+        message = QLabel("If you find this application useful, please consider supporting its development.\n\nYour support helps cover hosting costs and encourages further development.")
         message.setWordWrap(True)
         message.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(message)
@@ -57,21 +56,46 @@ class SponsorDialog(QDialog):
         # Create a grid layout for donation methods
         grid = QGridLayout()
         
-        # GitHub Sponsors
-        github_label = QLabel('<a href="https://github.com/sponsors/Nsfr750">GitHub Sponsors</a>')
-        github_label.setOpenExternalLinks(True)
-        github_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        # PayPal
-        paypal_label = QLabel('<a href="https://paypal.me/3dmega">PayPal Donation</a>')
-        paypal_label.setOpenExternalLinks(True)
-        paypal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # GitHub button
+        github_button = QPushButton("GitHub Sponsors")
+        github_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2ea44f;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                font-weight: bold;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #2c974b;
+            }
+        """)
+        github_button.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/sponsors/Nsfr750")))
+
+        # PayPal button
+        paypal_button = QPushButton("PayPal Donation")
+        paypal_button.setStyleSheet("""
+            QPushButton {
+                background-color: #0070ba;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                font-weight: bold;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #0062a3;
+            }
+        """)
+        paypal_button.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://paypal.me/3dmega")))
         
         # Monero
         monero_address = "47Jc6MC47WJVFhiQFYwHyBNQP5BEsjUPG6tc8R37FwcTY8K5Y3LvFzveSXoGiaDQSxDrnCUBJ5WBj6Fgmsfix8VPD4w3gXF"
+        monero_display = "XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR "
         monero_label = QLabel("Monero:")
-        monero_xmr= "XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR XMR"
-        monero_address_label = QLabel(monero_xmr)
+        monero_xmr = monero_address
+        monero_address_label = QLabel(monero_display)
         monero_address_label.setStyleSheet("""
             QLabel {
                 font-family: monospace;
@@ -94,7 +118,7 @@ class SponsorDialog(QDialog):
             qr.add_data(f'monero:{monero_address}')
             qr.make(fit=True)
             
-            # Draw QR code with Wand (avoid PIL)
+            # Draw QR code with Wand
             matrix = qr.get_matrix()
             box_size = 10
             border = 4
@@ -124,7 +148,8 @@ class SponsorDialog(QDialog):
             pixmap.loadFromData(data, "PNG")
             
             # Scale the pixmap to a reasonable size
-            pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, 
+                                 Qt.TransformationMode.SmoothTransformation)
             
             # Create a label to display the QR code
             qr_label = QLabel()
@@ -133,15 +158,15 @@ class SponsorDialog(QDialog):
             qr_label.setToolTip("Scan to donate XMR")
             
             # Add widgets to grid
-            grid.addWidget(QLabel("<h3>Ways to Support:</h3>"), 0, 0, 1, 2)
-            grid.addWidget(github_label, 1, 0, 1, 2)
-            grid.addWidget(paypal_label, 2, 0, 1, 2)
+            grid.addWidget(QLabel("<h3>>Ways to Support:</h3>"), 0, 0, 1, 2)
+            grid.addWidget(github_button, 1, 0, 1, 2)
+            grid.addWidget(paypal_button, 2, 0, 1, 2)
             grid.addWidget(monero_label, 3, 0, 1, 2)
             grid.addWidget(monero_address_label, 4, 0, 1, 2)
             grid.addWidget(qr_label, 1, 2, 4, 1)  # Span 4 rows
         else:
             # QR code not available, adjust layout
-            grid.addWidget(QLabel("<h3>Ways to Support:</h3>"), 0, 0, 1, 2)
+            grid.addWidget(QLabel("<h3>>Ways to Support:</h3>"), 0, 0, 1, 2)
             grid.addWidget(github_label, 1, 0, 1, 2)
             grid.addWidget(paypal_label, 2, 0, 1, 2)
             grid.addWidget(monero_label, 3, 0, 1, 2)
@@ -171,7 +196,7 @@ class SponsorDialog(QDialog):
             <li>Report bugs and suggest features</li>
             <li>Share with others who might find it useful</li>
         </ul>
-        """)
+        """)    
         other_help.setMaximumHeight(150)
         layout.addWidget(other_help)
         
@@ -247,3 +272,4 @@ class SponsorDialog(QDialog):
     def reset_monero_button(self):
         """Reset the Monero button text and style."""
         self.copy_monero_btn.setText("Copy Monero Address")
+        

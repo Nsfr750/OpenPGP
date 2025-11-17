@@ -224,7 +224,7 @@ class AboutDialog(QDialog):
         sys_info.setStyleSheet("""
             QTextBrowser {
                 background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
+                border: 1px solid #333333;
                 border-radius: 5px;
                 padding: 10px;
                 font-family: monospace;
