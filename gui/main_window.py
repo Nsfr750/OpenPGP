@@ -281,18 +281,34 @@ class MainWindow(QMainWindow):
         """Stop the SCIM server."""
         try:
             if hasattr(self, 'scim_server_instance') and self.scim_server_instance:
-                self.scim_server_instance.should_exit = True
+                # Signal the server to shut down
+                if hasattr(self.scim_server_instance, 'should_exit'):
+                    self.scim_server_instance.should_exit = True
+            
+                # If we have a thread, wait for it to finish
                 if hasattr(self, 'scim_server_thread') and self.scim_server_thread.is_alive():
                     self.scim_server_thread.join(timeout=5)
+                    if self.scim_server_thread.is_alive():
+                        # If thread is still alive after timeout, force terminate
+                        self.scim_server_thread.terminate()
+            
+                # Clean up
+                self.scim_server_instance = None
+                if hasattr(self, 'scim_server_thread'):
+                    self.scim_server_thread = None
                     
-            self.scim_running = False
-            self.update_server_ui()
-            self.statusBar().showMessage("SCIM server stopped", 3000)
-            logging.info("SCIM server stopped")
+                self.scim_running = False
+                self.update_server_ui()
+                self.statusBar().showMessage("SCIM server stopped", 3000)
+                logging.info("SCIM server stopped")
+            
         except Exception as e:
-            error_msg = f"Failed to stop SCIM server: {str(e)}"
+            error_msg = f"Error stopping SCIM server: {str(e)}"
             QMessageBox.critical(self, "Error", error_msg)
             logging.error(error_msg, exc_info=True)
+        finally:
+            self.scim_running = False
+            self.update_server_ui()
 
     def connect_siem(self):
         """Connect to SIEM."""

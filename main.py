@@ -161,31 +161,6 @@ async def server_error_exception_handler(request: Request, exc: HTTPException):
 
 app.state.data_sovereignty = data_sovereignty.sovereignty_manager
 
-if __name__ == "__main__":
-    import uvicorn
-    
-    # Start the server
-    uvicorn.run(
-        "main:app",
-        host="127.0.0.1",
-        port=int(os.getenv("PORT", 8000)),
-        reload=settings.DEBUG,
-        log_level="info" if not settings.DEBUG else "debug"
-    )
-    
-def global_exception_hook(exc_type, exc_value, exc_tb):
-    """Global exception handler that logs uncaught exceptions."""
-    if issubclass(exc_type, KeyboardInterrupt):
-        # Call the default excepthook for keyboard interrupts
-        sys.__excepthook__(exc_type, exc_value, exc_tb)
-        return
-
-    # Log the exception
-    log_exception(exc_value)
-
-# Set the exception hook
-sys.excepthook = global_exception_hook
-
 def main():
     # Create the Qt Application
     app = QApplication(sys.argv)
@@ -204,6 +179,7 @@ def main():
     
     # Create and show the main window
     try:
+        from gui.main_window import MainWindow
         window = MainWindow()
         window.show()
         
@@ -217,6 +193,38 @@ def main():
         log_error(f"Fatal error: {str(e)}")
         traceback.print_exc()
         return 1
+
+def start_uvicorn_server():
+    """Start the Uvicorn server.
+    
+    This function can be called explicitly when the server is needed.
+    """
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=int(os.getenv("PORT", 8000)),
+        reload=settings.DEBUG,
+        log_level="info" if not settings.DEBUG else "debug"
+    )
+
+if __name__ == "__main__":
+    # Only start the Qt application, not the Uvicorn server
+    sys.exit(main())
+
+def global_exception_hook(exc_type, exc_value, exc_tb):
+    """Global exception handler that logs uncaught exceptions."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        # Call the default excepthook for keyboard interrupts
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
+
+    # Log the exception
+    log_exception(exc_value)
+
+# Set the exception hook
+sys.excepthook = global_exception_hook
+
 
 if __name__ == "__main__":
     sys.exit(main())

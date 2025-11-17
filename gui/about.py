@@ -65,7 +65,7 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("About OpenPGP")
-        self.resize(600, 700)
+        self.resize(600, 400)
         
         layout = QVBoxLayout(self)
         
@@ -186,57 +186,9 @@ class AboutDialog(QDialog):
         header.addStretch()
         
         layout.addLayout(header)
-                
-        # Create a scrollable area for system info
-        # Set up scroll area
-        scroll = QScrollArea()
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
         
-        # System info widget
-        sys_info_widget = QWidget()
-        sys_info_layout = QVBoxLayout(sys_info_widget)
-        
-        # System info title
-        sys_info_title = QLabel("<h3>System Information</h3>")
-        sys_info_title.setStyleSheet("margin-top: 10px;")
-        sys_info_layout.addWidget(sys_info_title)
-        
-        # System info content
-        sys_info = QTextBrowser()
-        sys_info.setOpenLinks(True)
-        sys_info.setStyleSheet("""
-            QTextBrowser {
-                background-color: #f0f0f0;
-                border: 1px solid #d0d0d0;
-                border-radius: 4px;
-                padding: 8px;
-            }
-        """)
-        sys_info.setHtml(self.get_system_info())
-        sys_info_layout.addWidget(sys_info)
-        
-        # Set the widget to the scroll area
-        scroll.setWidget(sys_info_widget)
-        scroll.setWidgetResizable(True)
-        
-        # Add scroll area to the main layout
-        layout.addWidget(scroll, 1)  # The 1 makes it take up remaining space
-        sys_info.setStyleSheet("""
-            QTextBrowser {
-                background-color: #f8f9fa;
-                border: 1px solid #333333;
-                border-radius: 5px;
-                padding: 10px;
-                font-family: monospace;
-                font-size: 12px;
-                color: black;
-            }
-        """)
-        sys_info_layout.addWidget(sys_info)
-        
-        # Set the widget to the scroll area
-        scroll.setWidget(sys_info_widget)
-        layout.addWidget(scroll, 1)  # The '1' makes it take available space
+        # Add some spacing before the copyright
+        layout.addSpacing(20)
         
         # Copyright and license
         copyright = QLabel(
@@ -307,63 +259,3 @@ class AboutDialog(QDialog):
         # Add buttons layout to main layout with some spacing
         layout.addLayout(buttons)
         layout.setContentsMargins(20, 20, 20, 20)
-            
-    def get_system_info(self):
-        """Generate HTML-formatted system information."""
-        try:
-            # Get system information
-            system = platform.system()
-            release = platform.release()
-            version = platform.version()
-            machine = platform.machine()
-            processor = platform.processor()
-            
-            # Get Python information
-            python_version = platform.python_version()
-            python_implementation = platform.python_implementation()
-            
-            # Get PySide6 version
-            from PySide6 import __version__ as pyside_version
-            pyside6_version = QT_VERSION_STR
-            
-            # Get application information
-            app_version = get_version()
-            try:
-                app_codename = get_codename()
-                app_status = "Development" if is_development() else "Stable"
-            except Exception as e:
-                logger.warning(f"Could not get version details: {e}")
-                app_codename = ""
-                app_status = ""
-            
-            # Format the information as HTML
-            info = f"""
-            <html>
-            <body>
-                <h3>Application</h3>
-                <table>
-                    <tr><td><b>Name:</b></td><td>OpenPGP</td></tr>
-                    <tr><td><b>Version:</b></td><td>{app_version} {app_codename} ({app_status})</td></tr>
-                </table>            
-                <h3>System</h3>
-                <table>
-                    <tr><td><b>OS:</b></td><td>{system} {release}</td></tr>
-                    <tr><td><b>Version:</b></td><td>{version}</td></tr>
-                    <tr><td><b>Machine:</b></td><td>{machine}</td></tr>
-                    <tr><td><b>Processor:</b></td><td>{processor}</td></tr>
-                </table>
-                <h3>Python</h3>
-                <table>
-                    <tr><td><b>Version:</b></td><td>{python_implementation} {python_version}</td></tr>
-                    <tr><td><b>PySide6:</b></td><td>{pyside6_version}</td></tr>
-                </table>
-            </body>
-            </html>
-            """
-            
-            return info
-            
-        except Exception as e:
-            logger.error(f"Error getting system info: {e}")
-            return "<p>Error retrieving system information.</p>"
-    
