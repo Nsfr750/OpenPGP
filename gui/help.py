@@ -20,10 +20,10 @@ import logging
 
 # Get version information
 try:
-    from version import get_version
+    from .version import get_version
     VERSION = get_version()
 except ImportError:
-    VERSION = "2.1.0"
+    VERSION = "2.2.0"
 
 logger = logging.getLogger('OpenPGP')
 
@@ -102,7 +102,7 @@ class HelpDialog(QDialog):
         
         # Welcome message
         welcome_text = """
-        <h2>Welcome to OpenPGP v2.2.0</h2>
+        <h2>Welcome to OpenPGP</h2>
         <p>Thank you for using OpenPGP, a secure and easy-to-use application for PGP encryption, 
         decryption, and key management with advanced security features.</p>
         
@@ -302,7 +302,7 @@ class HelpDialog(QDialog):
         layout = QVBoxLayout(widget)
         
         text = """
-        <h2>Security Features in OpenPGP 2.2.0</h2>
+        <h2>Security Features in OpenPGP</h2>
         
         <h3>🔌 SIEM Integration</h3>
         <p>Monitor and analyze security events in real-time with Security Information and Event Management integration.</p>
@@ -426,6 +426,7 @@ class HelpDialog(QDialog):
             
             <p>
                 <a href="https://github.com/Nsfr750/OpenPGP">GitHub Repository</a> | 
+                <a href="https://github.com/Nsfr750/OpenPGP/wiki">Wiki Pages</a> | 
                 <a href="https://github.com/Nsfr750/OpenPGP/issues">Report Issues</a> |
                 <a href="https://github.com/Nsfr750/OpenPGP/releases">Release Notes</a>
             </p>

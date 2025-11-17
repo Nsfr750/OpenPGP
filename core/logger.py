@@ -4,12 +4,24 @@ Logging configuration and utilities for the application.
 import logging
 import logging.handlers
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
+# Determine if running as compiled executable
+IS_COMPILED = getattr(sys, 'frozen', False)
+
+# Get the application directory
+if IS_COMPILED:
+    # If compiled, use the directory where the executable is located
+    APP_DIR = Path(sys._MEIPASS) if hasattr(sys, '_MEIPASS') else Path(sys.executable).parent
+else:
+    # In development, use the project root
+    APP_DIR = Path(__file__).parent.parent
+
 # Logging configuration
-LOG_DIR = "logs"
+LOG_DIR = APP_DIR / "logs"
 LOG_FILE_PREFIX = "application"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -25,7 +37,8 @@ def _get_log_file_path() -> str:
         str: Path to the log file for the current day
     """
     today = datetime.now().strftime('%Y-%m-%d')
-    return os.path.join(LOG_DIR, f'{LOG_FILE_PREFIX}_{today}.log')
+    log_file = f'{LOG_FILE_PREFIX}_{today}.log'
+    return str(LOG_DIR / log_file)
 
 def set_log_file_prefix(prefix: str) -> None:
     """Set a custom prefix for log files.
@@ -118,11 +131,15 @@ def log_exception(message: str, *args, **kwargs):
     """Log an exception with stack trace."""
     logger.exception(message, *args, **kwargs)
 
-# Create __init__.py in core directory if it doesn't exist
-core_init_path = os.path.join(os.path.dirname(__file__), "__init__.py")
-if not os.path.exists(core_init_path):
-    with open(core_init_path, 'w') as f:
-        f.write('"""Core package for the application."""\n')
+# Create __init__.py in core directory if it doesn't exist (development only)
+if not IS_COMPILED:
+    core_init_path = Path(__file__).parent / "__init__.py"
+    if not core_init_path.exists():
+        try:
+            with open(core_init_path, 'w') as f:
+                f.write('"""Core package for OpenPGP application."""\n')
+        except Exception as e:
+            print(f"Warning: Could not create __init__.py: {e}")
 
 __all__ = [
     'logger',

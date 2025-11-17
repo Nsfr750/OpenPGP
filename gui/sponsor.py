@@ -48,7 +48,7 @@ class SponsorDialog(QDialog):
         layout.addWidget(title)
         
         # Message
-        message = QLabel("If you find this application useful, please consider supporting its development.\n\nYour support helps cover hosting costs and encourages further development.")
+        message = QLabel("This application is developed and maintained by a single developer.\nIf you find this application useful, please consider supporting its development.\nYour support helps keep the project alive, allows for new features and improvements and encourages further development.\n\n")
         message.setWordWrap(True)
         message.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(message)
@@ -206,6 +206,19 @@ class SponsorDialog(QDialog):
         # Close button
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: red;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                font-weight: bold;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: orange;
+            }
+        """)
         
         # Donate button
         donate_btn = QPushButton("Donate with PayPal")

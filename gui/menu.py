@@ -101,17 +101,17 @@ class MenuBar(QMenuBar):
         help_action.setShortcut(QKeySequence("F1"))
         help_menu.addAction(help_action)
         
-        wiki_action = QAction("&Wiki", self)
-        wiki_action.triggered.connect(self.show_wiki)
-        wiki_action.setShortcut(QKeySequence("F2"))
-        help_menu.addAction(wiki_action)
-        
-        help_menu.addSeparator()
-        
         about_action = QAction("&About", self)
         about_action.triggered.connect(self.show_about)
-        about_action.setShortcut(QKeySequence("F3"))
+        about_action.setShortcut(QKeySequence("F2"))
         help_menu.addAction(about_action)
+            
+        help_menu.addSeparator()
+
+        wiki_action = QAction("&Wiki", self)
+        wiki_action.triggered.connect(self.show_wiki)
+        wiki_action.setShortcut(QKeySequence("F3"))
+        help_menu.addAction(wiki_action)
         
         sponsor_action = QAction("&Sponsor", self)
         sponsor_action.triggered.connect(self.show_sponsor)
@@ -142,7 +142,7 @@ class MenuBar(QMenuBar):
             os.makedirs(logs_dir, exist_ok=True)
             
             # Default log file path
-            log_file = os.path.join(logs_dir, 'application.log')
+            log_file = os.path.join(logs_dir, 'application*.log')
             
             # Create and show the log viewer
             self.log_viewer = LogViewerWindow(log_file=log_file)
