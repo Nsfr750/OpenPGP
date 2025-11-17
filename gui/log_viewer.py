@@ -45,7 +45,7 @@ from PySide6.QtGui import (
     QPalette,
 )
 
-from utils.logger import get_log_files
+from core.logger import get_log_files
 
 class LogAnalyzer(QObject):
     """Background analyzer for log files."""

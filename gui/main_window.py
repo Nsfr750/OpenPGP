@@ -22,7 +22,7 @@ from .security import SecurityTab
 from .verifiable_credentials_tab import VerifiableCredentialsTab
 from .dialogs.tpm_settings_dialog import TpmSettingsDialog
 
-from utils.password_utils import PasswordGenerator, generate_pbkdf2_hash, verify_password
+from core.password_utils import PasswordGenerator, generate_pbkdf2_hash, verify_password
 from pgpy import PGPKey
 from core.openpgp import (
     generate_pgp_keypair, save_pgp_key, load_pgp_key,

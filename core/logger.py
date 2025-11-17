@@ -4,19 +4,37 @@ Logging configuration and utilities for the application.
 import logging
 import logging.handlers
 import os
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
-# Create logs directory if it doesn't exist
+# Logging configuration
 LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Default log format
+LOG_FILE_PREFIX = "application"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-# Default log level
 DEFAULT_LOG_LEVEL = logging.INFO
+
+# Ensure log directory exists
+os.makedirs(LOG_DIR, exist_ok=True)
+
+def _get_log_file_path() -> str:
+    """Get the log file path for the current day.
+    
+    Returns:
+        str: Path to the log file for the current day
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    return os.path.join(LOG_DIR, f'{LOG_FILE_PREFIX}_{today}.log')
+
+def set_log_file_prefix(prefix: str) -> None:
+    """Set a custom prefix for log files.
+    
+    Args:
+        prefix: Prefix to use for log files
+    """
+    global LOG_FILE_PREFIX
+    LOG_FILE_PREFIX = prefix
 
 # Configure root logger
 def setup_logger(name: Optional[str] = None, log_level: int = None):
@@ -32,32 +50,50 @@ def setup_logger(name: Optional[str] = None, log_level: int = None):
     """
     logger = logging.getLogger(name)
     
-    if log_level is None:
-        log_level = DEFAULT_LOG_LEVEL
-    
-    logger.setLevel(log_level)
-    
     # Don't add handlers if they're already configured
     if logger.handlers:
         return logger
     
+    # Set log level
+    logger.setLevel(log_level if log_level is not None else DEFAULT_LOG_LEVEL)
+    
     # Create formatter
     formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
     
-    # Console handler
+    # Create console handler
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # File handler (rotating)
-    log_file = Path(LOG_DIR) / "app.log"
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8'
-    )
+    # Create file handler with daily rotation
+    log_file = _get_log_file_path()
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     
     return logger
+
+def get_log_files() -> List[Path]:
+    """Get a list of log files in the log directory.
+    
+    Returns:
+        List of Path objects for log files, sorted by modification time (newest first)
+    """
+    try:
+        log_dir = Path(LOG_DIR)
+        if not log_dir.exists():
+            return []
+            
+        # Get all log files with the prefix_*.log pattern
+        log_files = [f for f in log_dir.glob(f'{LOG_FILE_PREFIX}_*.log') if f.is_file()]
+        
+        # Sort by modification time (newest first)
+        log_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        return log_files
+    except Exception as e:
+        logger.error(f'Error getting log files: {e}')
+        return []
 
 # Create default logger
 logger = setup_logger(__name__)
