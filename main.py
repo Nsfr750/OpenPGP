@@ -1,4 +1,7 @@
 import os
+os.environ['GTK_IM_MODULE'] = 'ibus'
+os.environ['QT_IM_MODULE'] = 'ibus'
+os.environ['XMODIFIERS'] = '@im=ibus'
 import sys
 import traceback
 import builtins

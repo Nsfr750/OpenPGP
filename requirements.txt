@@ -34,6 +34,7 @@ pgpy>=0.5.3  # For secure passphrase handling
 cryptography>=42.0.0  # For secure passphrase handling
 pyOpenSSL>=24.0.0  # For secure passphrase handling
 python-gnupg>=0.5.1  # For hardware token support
+openpgp>=0.2.3  # For secure passphrase handling
 
 # Homomorphic Encryption
 tenseal>=0.3.0  # For homomorphic encryption support

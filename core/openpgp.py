@@ -207,7 +207,7 @@ def generate_pgp_keypair(name: str, email: str, passphrase: Optional[str] = None
     key.add_uid(
         uid, 
         usage=usage,
-        hashes=[HashAlgorithm.SHA256, HashAlgorithm.SHA384, HashAlgorithm.SHA512, HashAlgorithm.SHA3_256, HashAlgorithm.SHA3_512],
+        hashes=[HashAlgorithm.SHA256, HashAlgorithm.SHA384, HashAlgorithm.SHA512],
         ciphers=[SymmetricKeyAlgorithm.AES256, SymmetricKeyAlgorithm.AES192, SymmetricKeyAlgorithm.AES128],
         compression=[CompressionAlgorithm.ZLIB, CompressionAlgorithm.ZLIB, CompressionAlgorithm.Uncompressed]
     )
@@ -496,8 +496,9 @@ def verify_signature(message: str, signature_str: str, pubkey: PGPKey) -> bool:
     """
     try:
         # Create a message object from the original message
-        msg = PGPMessage.new(message)
-        
+        if not isinstance(message, (bytes, bytearray)):
+            message = message.encode('utf-8')
+            
         # Parse the signature
         signature = PGPSignature.from_blob(signature_str)
         if isinstance(signature, list):
@@ -505,8 +506,11 @@ def verify_signature(message: str, signature_str: str, pubkey: PGPKey) -> bool:
                 raise ValueError("No signature found in the provided data")
             signature = signature[0]
             
+        # Create a message object with the correct format for verification
+        msg = PGPMessage.new(message, format='utf8')
+        
         # Verify the signature
-        return pubkey.verify(msg, signature) is not False
+        return pubkey.verify(message, signature) is not False
     except Exception as e:
         raise ValueError(f"Verification failed: {str(e)}")
 

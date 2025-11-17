@@ -86,12 +86,6 @@ Traceback.log
 # Other
 *.bak
 *.tmp
-build_simple.bat
-openpgp.spec
-clean_pycache.py
-clear_cache.py
-TXT
-firma.bat
 .windsurf/rules
-setup/comp.py
-setup/__init__.py
+setup/
+launch_openpgp.bat
